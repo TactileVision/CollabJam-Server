@@ -1,0 +1,1 @@
+"{\"uuid\":\"a346ab33-7866-41bd-b4be-7923c05a315a\",\"metadata\":{\"name\":\"amsterdam-25\",\"favorite\":false,\"recordDate\":\"2023-06-21T12:21:47.950Z\"},\"instructions\":[{\"setParameter\":{\"channelIds\":[0],\"intensity\":0.6}},{\"wait\":{\"miliseconds\":129}},{\"setParameter\":{\"channelIds\":[0],\"intensity\":0}},{\"setParameter\":{\"intensity\":0,\"channelIds\":[0]}}]}"

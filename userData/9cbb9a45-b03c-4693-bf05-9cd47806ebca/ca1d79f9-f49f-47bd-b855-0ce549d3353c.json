@@ -1,0 +1,1 @@
+"{\"uuid\":\"ca1d79f9-f49f-47bd-b855-0ce549d3353c\",\"metadata\":{\"name\":\"amsterdam-8\",\"favorite\":false,\"recordDate\":\"2023-06-21T12:07:28.768Z\"},\"instructions\":[{\"setParameter\":{\"channelIds\":[2],\"intensity\":0.6}},{\"wait\":{\"miliseconds\":165}},{\"setParameter\":{\"channelIds\":[2],\"intensity\":0}},{\"setParameter\":{\"intensity\":0,\"channelIds\":[2]}}]}"

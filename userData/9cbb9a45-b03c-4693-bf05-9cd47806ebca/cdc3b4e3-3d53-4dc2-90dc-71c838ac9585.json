@@ -1,0 +1,1 @@
+"{\"uuid\":\"cdc3b4e3-3d53-4dc2-90dc-71c838ac9585\",\"metadata\":{\"name\":\"amsterdam-14\",\"favorite\":false,\"recordDate\":\"2023-06-21T12:11:37.953Z\"},\"instructions\":[{\"setParameter\":{\"channelIds\":[0],\"intensity\":0.6}},{\"wait\":{\"miliseconds\":88}},{\"setParameter\":{\"channelIds\":[0],\"intensity\":0}},{\"setParameter\":{\"intensity\":0,\"channelIds\":[0]}}]}"

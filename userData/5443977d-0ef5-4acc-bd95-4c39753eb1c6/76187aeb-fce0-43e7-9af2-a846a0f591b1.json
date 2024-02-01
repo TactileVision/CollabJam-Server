@@ -1,0 +1,1 @@
+"{\"uuid\":\"76187aeb-fce0-43e7-9af2-a846a0f591b1\",\"metadata\":{\"name\":\"denHaag-46\",\"favorite\":false,\"recordDate\":\"2023-06-22T14:06:21.868Z\"},\"instructions\":[{\"setParameter\":{\"channelIds\":[0,1,2],\"intensity\":0}},{\"wait\":{\"miliseconds\":3581}},{\"setParameter\":{\"intensity\":0,\"channelIds\":[0,1,2]}}]}"

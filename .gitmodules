@@ -1,0 +1,3 @@
+[submodule "Collabjam-Shared-Types"]
+	path = src/shared
+	url = https://github.com/TactileVision/CollabJam-Shared

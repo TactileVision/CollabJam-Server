@@ -1,0 +1,197 @@
+import { InteractionMode, User } from "@sharedTypes/roomTypes";
+import { defaultColorUsers } from "../types/defaultColorUsers";
+import RoomModule from "./RoomModule";
+import StoreManager from "./StoreManager";
+
+//contain all metadata of one user
+let participantList: Map<string, User[]> = new Map<string, User[]>();
+//custom array to distribute the user colours equally
+let usedColorsList: Map<string, number[]> = new Map<string, number[]>();
+//contain ws objects to communicate wit the clients
+export let wsRoomList: Map<string, WebSocket[]> = new Map<string, WebSocket[]>();
+
+const createRoomRef = (roomId: string) => {
+    console.log("createRoomRef")
+    participantList.set(roomId, []);
+    usedColorsList.set(roomId, new Array(defaultColorUsers.length).fill(0));
+    wsRoomList.set(roomId, []);
+}
+
+const removeRoomRef = (roomId: string) => {
+    participantList.delete(roomId);
+    usedColorsList.delete(roomId);
+    wsRoomList.delete(roomId);
+}
+
+const getUser = (roomId: string, userId: string): User | undefined => {
+    let user: User | undefined = undefined;
+    let participants = participantList.get(roomId);
+    if (participants !== undefined) {
+        for (let i = 0; i < participants.length; i++) {
+            if (participants[i].id == userId) {
+                user = participants[i];
+                break;
+            }
+        }
+    }
+    return user
+}
+
+const getParticipants = (roomId: string): User[] => {
+    const participants = participantList.get(roomId);
+    if (participants == undefined)
+        return [];
+
+    return participants;
+}
+
+const getWsRoomList = (roomId: string): WebSocket[] => {
+    const wList = wsRoomList.get(roomId);
+    if (wList == undefined)
+        return [];
+
+    return wList;
+}
+
+/**
+* calculate the new color for new user
+*/
+const calculateUserColor = (roomId: string, amountOfParticipants: number): string => {
+    const usedColors = usedColorsList.get(roomId)!;
+    let colorId = 0;
+    for (let i = 0; i < usedColors.length - 1; i++) {
+        if (usedColors[i] > usedColors[i + 1]) {
+            colorId = i + 1;
+            break;
+        }
+        if (usedColors[i] < usedColors[i + 1]) {
+            colorId = i;
+            break;
+        }
+    }
+
+    usedColors[colorId]++;
+    return defaultColorUsers[colorId];
+}
+
+/**
+* update usedColorsList, because user left the room
+*/
+const resetUserColors = (roomId: string, participColor: string) => {
+    const usedColors = usedColorsList.get(roomId);
+    if (usedColors !== undefined) {
+        for (let x = 0; x < defaultColorUsers.length; x++) {
+            if (participColor == defaultColorUsers[x]) {
+                usedColors[x]--;
+                break;
+            }
+        }
+    }
+}
+
+/**
+* method to change the username of specific user
+*/
+const updateUser = (roomId: string, user: User): boolean => {
+    let updated = false;
+    const participants = participantList.get(roomId);
+    if (participants == undefined)
+        return updated;
+
+    for (let i = 0; i < participants.length; i++) {
+        if (participants[i].id == user.id) {
+            participants[i] = { ...participants[i], name: user.name };
+            updated = true;
+            break;
+        }
+    }
+
+    return updated
+}
+
+/**
+* method that new user entered the room
+* return the new User as object
+*/
+const enterUserInRoom = (ws: WebSocket, userID: string, userName: string, roomId: string): User | undefined => {
+    const participants = participantList.get(roomId);
+    if (participants == undefined) return;
+
+    for (let i = 0; i < participants.length; i++) {
+        if (participants[i].id == userID) {
+            return;
+        }
+    }
+
+    const color = calculateUserColor(roomId, participants.length);
+    participantList.set(roomId, [...participants, { id: userID, name: userName, color: color }])
+    const wsList = wsRoomList.get(roomId)
+    if (wsList !== undefined)
+        wsRoomList.set(roomId, [...wsList, ws])
+
+    return { id: userID, name: userName, color: color };
+
+}
+
+/**
+* method to update data, in cause of somebody left the room
+* return the new number of participants from the room
+*/
+const removeParticipant = (roomId: string, userId: string): number | undefined => {
+    //console.log("removeParticipant")
+    //console.log(roomList)
+    //console.log(roomList.get(roomId))
+    const participants = participantList.get(roomId);
+    if (participants == undefined)
+        return;
+
+    for (let i = 0; i < participants.length; i++) {
+        if (participants[i].id == userId) {
+            resetUserColors(roomId, participants[i].color)
+            participants.splice(i, 1);
+            break;
+        }
+    }
+
+    console.log(`Removed user from ${roomId}, ${participants.length} users left`)
+    if (participants.length == 0) {
+        const room = RoomModule.getRoomInfo(roomId)
+        if (room != undefined) {
+            if (room.mode != InteractionMode.Jamming) {
+                StoreManager.updateRoomMode({ roomId: room.id, newMode: InteractionMode.Jamming, tactonId: undefined }, new Date().getTime())
+            }
+
+        }
+    }
+    return participants.length;
+}
+
+const findRoomUserOfClient = (userId: string) => {
+    let roomId: string | undefined = undefined;
+    let foundUser: User | undefined = undefined;
+    loop1: for (let [key, user] of participantList) {
+        for (let i = 0; i < user.length; i++) {
+            if (user[i].id == userId) {
+                roomId = key;
+                foundUser = user[i];
+                break loop1;
+            }
+        }
+    }
+
+    if (roomId == undefined) return;
+    return { roomId: roomId, user: foundUser };
+}
+
+export default {
+    wsRoomList,
+    getParticipants,
+    getWsRoomList,
+    createRoomRef,
+    removeRoomRef,
+    enterUserInRoom,
+    updateUser,
+    getUser,
+    removeParticipant,
+    findRoomUserOfClient
+}

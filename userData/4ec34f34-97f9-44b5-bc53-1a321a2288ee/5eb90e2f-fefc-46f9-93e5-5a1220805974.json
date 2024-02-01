@@ -1,0 +1,1 @@
+"{\"uuid\":\"5eb90e2f-fefc-46f9-93e5-5a1220805974\",\"metadata\":{\"name\":\"window-no-dev-1\",\"favorite\":false,\"recordDate\":\"2023-06-21T11:48:10.423Z\"},\"instructions\":[{\"setParameter\":{\"channelIds\":[2],\"intensity\":1}},{\"wait\":{\"miliseconds\":1334}},{\"setParameter\":{\"channelIds\":[2],\"intensity\":0}},{\"setParameter\":{\"intensity\":0,\"channelIds\":[2]}}]}"

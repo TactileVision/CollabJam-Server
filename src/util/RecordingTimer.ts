@@ -3,7 +3,7 @@ import { TactonRecordingSession } from "src/types";
 import StoreManager from "../store/StoreManager";
 
 export class RecordingTimer {
-    intervalHandle: NodeJS.Timer | null = null
+    intervalHandle: NodeJS.Timeout | null = null
     interval: number
     rooms: Map<string, Room>
     recordings: Map<string, TactonRecordingSession>

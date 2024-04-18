@@ -172,7 +172,7 @@ const processInstructionsFromClient = (roomId: string, clienId: string, instruct
         const user = UserModule.getUser(roomId, clienId)
         clientInstruction.push({
             intensity: instruction.intensity,
-            channelIds: instruction.channels,
+            channels: instruction.channels,
             author: user
         })
     })

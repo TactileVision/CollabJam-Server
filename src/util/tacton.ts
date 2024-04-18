@@ -23,9 +23,9 @@ function turnOffAllOutputs(t: Tacton, lastModified: number) {
 	//get all unique channels
 	//add instruction with all channels and intensity 0
 	const sp = t.instructions.filter(i => { return isInstructionSetParameter(i) == true }) as InstructionSetParameter[]
-	const uniqueChannels = [...new Set(sp.map(item => item.setParameter.channelIds).flat())];
+	const uniqueChannels = [...new Set(sp.map(item => item.setParameter.channels).flat())];
 	t.instructions.push({ wait: { miliseconds: new Date().getTime() - lastModified } })
-	t.instructions.push({ setParameter: { intensity: 0, channelIds: uniqueChannels } })
+	t.instructions.push({ setParameter: { intensity: 0, channels: uniqueChannels } })
 	// console.log(uniqueChannels)
 	// console.log(t)
 

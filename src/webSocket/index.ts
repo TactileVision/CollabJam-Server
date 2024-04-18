@@ -1,4 +1,4 @@
-import StorageManager from "../store/StoreManager"
+import StoreManager from "../store/StoreManager"
 import RoomModule from "../store/RoomModule";
 import UserModule from "../store/UserModule";
 import TactonModule from "../store/TactonModule";
@@ -24,7 +24,8 @@ export const onMessage = (ws: WebSocket, data: any, client: string) => {
     /**
      * every message has an startTimeStamp, to calculate the latency
      */
-    //console.log(`Received message from user ${client}`);
+    console.log(`Received message from user ${client}`);
+    console.log(data);
     try {
         let msg: SocketMessage = JSON.parse(data);
         switch (msg.type) {
@@ -36,6 +37,7 @@ export const onMessage = (ws: WebSocket, data: any, client: string) => {
                     type: WS_MSG_TYPE.GET_AVAILABLE_ROOMS_CLI,
                     payload: Array.from(RoomModule.roomList.values())
                 }))
+                break;
             }
             case WS_MSG_TYPE.UPDATE_ROOM_SERV: {
                 /**
@@ -55,7 +57,7 @@ export const onMessage = (ws: WebSocket, data: any, client: string) => {
                     const roomInfo = RoomModule.getRoomInfo(msg.payload.room.id);
                     const participants = UserModule.getParticipants(msg.payload.room.id);
 
-                    StorageManager.broadCastMessage(msg.payload.room.id,
+                    StoreManager.broadCastMessage(msg.payload.room.id,
                         WS_MSG_TYPE.UPDATE_ROOM_CLI,
                         { room: roomInfo, participants: participants },
                         msg.startTimeStamp)
@@ -92,7 +94,7 @@ export const onMessage = (ws: WebSocket, data: any, client: string) => {
                         tactons = tactonRecordingSession.history
                     }
 
-                    StorageManager.enterSession(ws, client, msg.payload.userName, room, tactons, msg.payload.startTimeStamp);
+                    StoreManager.enterSession(ws, client, msg.payload.userName, room, tactons, msg.payload.startTimeStamp);
                 }
 
 
@@ -111,8 +113,14 @@ export const onMessage = (ws: WebSocket, data: any, client: string) => {
                 let existRoom = true;
                 let roomInfo = undefined;
 
-                // const id = getID(msg.payload);
-                const id = msg.payload
+                let id = ""
+                if ((typeof msg.payload) == "string") {
+                    console.log("string")
+                    id = getID(msg.payload);
+                } else {
+                    console.log("object")
+                    id = getID(msg.payload.uuid)
+                }
                 if (id !== undefined)
                     roomInfo = RoomModule.getRoomInfo(id);
 
@@ -158,7 +166,7 @@ export const onMessage = (ws: WebSocket, data: any, client: string) => {
                     break;
 
                 const participants = UserModule.getParticipants(msg.payload.roomId);
-                StorageManager.broadCastMessage(msg.payload.roomId, WS_MSG_TYPE.UPDATE_USER_ACCOUNT_CLI, participants, msg.startTimeStamp);
+                StoreManager.broadCastMessage(msg.payload.roomId, WS_MSG_TYPE.UPDATE_USER_ACCOUNT_CLI, participants, msg.startTimeStamp);
                 break;
             }
             case WS_MSG_TYPE.LOG_OUT: {
@@ -169,7 +177,7 @@ export const onMessage = (ws: WebSocket, data: any, client: string) => {
                 *      user: User
                 *  } as payload
                 */
-                StorageManager.removeUserFromSession(msg.payload.roomId, msg.payload.user, msg.startTimeStamp);
+                StoreManager.removeUserFromSession(msg.payload.roomId, msg.payload.user, msg.startTimeStamp);
                 break;
             }
             case WS_MSG_TYPE.SEND_INSTRUCTION_SERV: {
@@ -182,7 +190,7 @@ export const onMessage = (ws: WebSocket, data: any, client: string) => {
                 */
                 // const r = RoomModule.getRoomInfo(msg.payload.roomId)
                 // if (r?.isRecording) {
-                StorageManager.processInstructionsFromClient(msg.payload.roomId, client, msg.payload.instructions, msg.startTimeStamp)
+                StoreManager.processInstructionsFromClient(msg.payload.roomId, client, msg.payload.instructions, msg.startTimeStamp)
                 // }
                 break;
             }
@@ -194,7 +202,7 @@ export const onMessage = (ws: WebSocket, data: any, client: string) => {
                 *      "newMode": InteractionMode
                 *  } as payload
                 */
-                StorageManager.updateRoomMode(msg.payload as UpdateRoomMode, msg.startTimeStamp)
+                StoreManager.updateRoomMode(msg.payload as UpdateRoomMode, msg.startTimeStamp)
                 break;
             }
             case WS_MSG_TYPE.CHANGE_DURATION_SERV: {
@@ -202,7 +210,7 @@ export const onMessage = (ws: WebSocket, data: any, client: string) => {
                  * method to update all clients with the new max duration of time profile
                  * recieve "{roomId:string,duration":number} as payload
                  */
-                StorageManager.changeDuration(msg.payload.roomId, msg.payload.duration, msg.startTimeStamp)
+                StoreManager.changeDuration(msg.payload.roomId, msg.payload.duration, msg.startTimeStamp)
                 break;
             }
             case WS_MSG_TYPE.PING: {
@@ -238,6 +246,18 @@ export const onMessage = (ws: WebSocket, data: any, client: string) => {
                 }))
                 break;
             }
+            case WS_MSG_TYPE.UPDATE_TACTON_SERV: {
+                const session = TactonModule.sessions.get(msg.payload.roomId);
+                if (!session) return;
+
+                const index = session.history.findIndex((tacton) => tacton.uuid === msg.payload.tacton.uuid);
+                if (index === -1) return;
+
+                session.history[index] = msg.payload.tacton;
+                StoreManager.broadCastMessage(msg.payload.roomId, WS_MSG_TYPE.UPDATE_TACTON_CLI, msg.payload, msg.startTimeStamp);
+                saveTactonAsJson(msg.payload.roomId, session.history[index]);
+                break;
+            }
             case WS_MSG_TYPE.CHANGE_ROOMINFO_TACTON_PREFIX_SERV: {
                 /**
                  * method to update the filename prefix 
@@ -270,7 +290,7 @@ export const onMessage = (ws: WebSocket, data: any, client: string) => {
                     const index = s.history.findIndex(e => { return e.uuid == d.tactonId })
                     // console.log(`Detected change in metadata at index ${index}`)
                     s.history[index].metadata = d.metadata
-                    StorageManager.broadCastMessage(d.roomId, WS_MSG_TYPE.CHANGE_TACTON_METADATA_CLI, d, msg.startTimeStamp)
+                    StoreManager.broadCastMessage(d.roomId, WS_MSG_TYPE.CHANGE_TACTON_METADATA_CLI, d, msg.startTimeStamp)
                     saveTactonAsJson(d.roomId, s.history[index])
                 }
 
@@ -292,6 +312,6 @@ export const onClose = (client: string) => {
     console.log(`Received close message  from user ${client}`);
     const payload = UserModule.findRoomUserOfClient(client);
     if (payload !== undefined && payload.user !== undefined) {
-        StorageManager.removeUserFromSession(payload.roomId, payload.user, new Date().getTime());
+        StoreManager.removeUserFromSession(payload.roomId, payload.user, new Date().getTime());
     }
 }

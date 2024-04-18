@@ -173,7 +173,8 @@ const processInstructionsFromClient = (roomId: string, clienId: string, instruct
         clientInstruction.push({
             intensity: instruction.intensity,
             channels: instruction.channels,
-            author: user
+            author: user,
+            keyId: undefined
         })
     })
     if (clientInstruction.length == 0) return;

@@ -1,1 +1,0 @@
-"{\"uuid\":\"813238b9-56aa-44f9-ba26-18091a53de68\",\"metadata\":{\"name\":\"rotterdam-25\",\"favorite\":false,\"recordDate\":\"2023-06-21T13:31:17.195Z\"},\"instructions\":[{\"setParameter\":{\"channelIds\":[1],\"intensity\":0.6}},{\"wait\":{\"miliseconds\":963}},{\"setParameter\":{\"channelIds\":[1],\"intensity\":0}},{\"setParameter\":{\"intensity\":0,\"channelIds\":[1]}}]}"

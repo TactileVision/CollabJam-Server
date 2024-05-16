@@ -7,7 +7,7 @@ export class RecordingTimer {
     interval: number
     rooms: Map<string, Room>
     recordings: Map<string, TactonRecordingSession>
-    websockets: Map<string, WebSocket[]>
+    websockets: Map<string, Map<string, WebSocket>>
     // lastCallMs = new Map<string, number>()
     lastCallMs = 0
     //TODO Add a lastCallMS for each session!!
@@ -55,7 +55,7 @@ export class RecordingTimer {
         }
     }
 
-    constructor(updateIntervalMs: number, rooms: Map<string, Room>, recordings: Map<string, TactonRecordingSession>, websockets: Map<string, WebSocket[]>) {
+    constructor(updateIntervalMs: number, rooms: Map<string, Room>, recordings: Map<string, TactonRecordingSession>, websockets: Map<string, Map<string, WebSocket>>) {
         this.interval = updateIntervalMs
         this.recordings = recordings
         this.rooms = rooms

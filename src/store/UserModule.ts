@@ -8,13 +8,13 @@ let participantList: Map<string, User[]> = new Map<string, User[]>();
 //custom array to distribute the user colours equally
 let usedColorsList: Map<string, number[]> = new Map<string, number[]>();
 //contain ws objects to communicate wit the clients
-export let wsRoomList: Map<string, WebSocket[]> = new Map<string, WebSocket[]>();
+export let wsRoomList: Map<string, Map<string, WebSocket>> = new Map<string, Map<string, WebSocket>>();
 
 const createRoomRef = (roomId: string) => {
     console.log("createRoomRef")
     participantList.set(roomId, []);
     usedColorsList.set(roomId, new Array(defaultColorUsers.length).fill(0));
-    wsRoomList.set(roomId, []);
+    wsRoomList.set(roomId, new Map<string, WebSocket>);
 }
 
 const removeRoomRef = (roomId: string) => {
@@ -45,10 +45,10 @@ const getParticipants = (roomId: string): User[] => {
     return participants;
 }
 
-const getWsRoomList = (roomId: string): WebSocket[] => {
+const getWsRoomList = (roomId: string): Map<string, WebSocket> => {
     const wList = wsRoomList.get(roomId);
     if (wList == undefined)
-        return [];
+        return new Map<string, WebSocket>();
 
     return wList;
 }
@@ -113,7 +113,7 @@ const updateUser = (roomId: string, user: User): boolean => {
 * method that new user entered the room
 * return the new User as object
 */
-const enterUserInRoom = (ws: WebSocket, userID: string, userName: string, roomId: string): User | undefined => {
+const addUserToParticipantList = (ws: WebSocket, userID: string, userName: string, roomId: string): User | undefined => {
     const participants = participantList.get(roomId);
     if (participants == undefined) return;
 
@@ -124,12 +124,9 @@ const enterUserInRoom = (ws: WebSocket, userID: string, userName: string, roomId
     }
 
     const color = calculateUserColor(roomId, participants.length);
-    participantList.set(roomId, [...participants, { id: userID, name: userName, color: color }])
-    const wsList = wsRoomList.get(roomId)
-    if (wsList !== undefined)
-        wsRoomList.set(roomId, [...wsList, ws])
-
-    return { id: userID, name: userName, color: color };
+    const user = { id: userID, name: userName, color: color }
+    participantList.set(roomId, [...participants, user ])
+    return user
 
 }
 
@@ -137,13 +134,12 @@ const enterUserInRoom = (ws: WebSocket, userID: string, userName: string, roomId
 * method to update data, in cause of somebody left the room
 * return the new number of participants from the room
 */
-const removeParticipant = (roomId: string, userId: string): number | undefined => {
-    //console.log("removeParticipant")
-    //console.log(roomList)
-    //console.log(roomList.get(roomId))
+const removeParticipantFromRoom = (roomId: string, userId: string): number | undefined => {
     const participants = participantList.get(roomId);
     if (participants == undefined)
         return;
+
+    console.log("Removing participants - " + participants.length)
 
     for (let i = 0; i < participants.length; i++) {
         if (participants[i].id == userId) {
@@ -153,7 +149,6 @@ const removeParticipant = (roomId: string, userId: string): number | undefined =
         }
     }
 
-    console.log(`Removed user from ${roomId}, ${participants.length} users left`)
     if (participants.length == 0) {
         const room = RoomModule.getRoomInfo(roomId)
         if (room != undefined) {
@@ -189,9 +184,9 @@ export default {
     getWsRoomList,
     createRoomRef,
     removeRoomRef,
-    enterUserInRoom,
+    addUserToParticipantList,
     updateUser,
     getUser,
-    removeParticipant,
+    removeParticipantFromRoom,
     findRoomUserOfClient
 }

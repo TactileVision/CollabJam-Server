@@ -42,18 +42,33 @@ const updateSession = (roomAttributes: { id: string, name: string, description: 
  * notify all users about new participant
  */
 const enterSession = (ws: WebSocket, userID: string, userName: string, roomInfo: Room, recordings: Tacton[], startTimeStamp: number) => {
-    const userData = UserModule.enterUserInRoom(ws, userID, userName, roomInfo.id);
+    const user = UserModule.addUserToParticipantList(ws, userID, userName, roomInfo.id);
+
+    // MARK: Add user to the websocket list
+    if (UserModule.wsRoomList.get(roomInfo.id) == undefined) {
+        UserModule.wsRoomList.set(roomInfo.id, new Map<string, WebSocket>())
+        console.log("Created websocket list for room " + roomInfo.id)
+    }
+
+    // Add users websocket to the map associated with the room 
+    UserModule.wsRoomList.get(roomInfo.id)!.set(userID, ws)
+
     //its about entering should never return at this point
-    if (userData == undefined) return;
+    if (user == undefined) return;
+
 
     const participantList = UserModule.getParticipants(roomInfo.id)
-
+    console.log(participantList)
     //send the new user all data of the room, participants and his own userId
     ws.send(JSON.stringify({
         type: WS_MSG_TYPE.ENTER_ROOM_CLI,
         payload: { room: roomInfo, userId: userID, participants: participantList, recordings: recordings },
         startTimeStamp: startTimeStamp
     }))
+
+    // console.log(roomInfo)
+    // console.log("Sending new user info!!!")
+    // broadCastMessage(roomInfo.id, WS_MSG_TYPE.UPDATE_USER_ACCOUNT_CLI, participantList, startTimeStamp);
 
     //update all user about the new person
     broadCastMessage(roomInfo.id,
@@ -68,8 +83,20 @@ const enterSession = (ws: WebSocket, userID: string, userName: string, roomInfo:
  * if the room is now empty --> close the room
  */
 const removeUserFromSession = (roomId: string, user: User, startTimeStamp: number) => {
-    const userInRoom = UserModule.removeParticipant(roomId, user.id);
+    const userInRoom = UserModule.removeParticipantFromRoom(roomId, user.id);
+
     if (userInRoom !== undefined) {
+        //Remove websocket connection
+
+        const wsr = UserModule.wsRoomList.get(roomId)
+        if (wsr !== undefined) {
+            const remove = wsr.get(user.id)
+            if (remove != undefined) {
+                console.log("deleting the ws connetion to the user with the id" + user.id)
+                wsr.delete(user.id)
+            }
+        }
+
         if (userInRoom == 0) {
             //TODO Add a mechanism to specify wheter a room is temporary or permanent
             // RoomModule.removeRoom(roomId);
@@ -80,6 +107,7 @@ const removeUserFromSession = (roomId: string, user: User, startTimeStamp: numbe
                 recordingMetronome.stop()
             }
         } else {
+            console.log("Removed user from sesssion, updating cli")
             const participants = UserModule.getParticipants(roomId);
             broadCastMessage(roomId, WS_MSG_TYPE.UPDATE_USER_ACCOUNT_CLI, participants, startTimeStamp);
         }
@@ -151,15 +179,26 @@ const changeDuration = (roomId: string, maxDuration: number, startTimeStamp: num
  */
 const broadCastMessage = (roomId: string, type: WS_MSG_TYPE, payload: any, startTimeStamp: number) => {
     const wsList = UserModule.getWsRoomList(roomId);
-    if (wsList.length == 0) return;
+    console.log("Connecting to " + wsList.size + " clients")
+    if (wsList.size == 0) return;
 
-    for (let i = 0; i < wsList.length; i++) {
-        wsList[i].send(JSON.stringify({
+    wsList.forEach((ws) => {
+        ws.send(JSON.stringify({
             type: type,
             payload: payload,
             startTimeStamp: startTimeStamp
         }))
-    };
+    })
+    // console.log("Connecting to " + wsList.length + " clients")
+    // if (wsList.length == 0) return;
+
+    // for (let i = 0; i < wsList.length; i++) {
+    //     wsList[i].send(JSON.stringify({
+    //         type: type,
+    //         payload: payload,
+    //         startTimeStamp: startTimeStamp
+    //     }))
+    // };
 }
 
 /**

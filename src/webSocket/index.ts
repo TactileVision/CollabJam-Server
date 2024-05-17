@@ -6,6 +6,7 @@ import { InteractionMode } from "@sharedTypes/roomTypes";
 import { saveTactonAsJson } from "../util/FileStorage";
 import { Tacton } from "@sharedTypes/tactonTypes"
 import { WS_MSG_TYPE, ChangeTactonMetadata, UpdateRoomMode } from "@sharedTypes/websocketTypes";
+import { getRooms } from "../apps/rooms/rooms.data-access";
 
 interface SocketMessage {
     type: WS_MSG_TYPE;
@@ -20,7 +21,7 @@ const getID = (address: string): string => {
     return address.slice(index + 1, address.length);
 }
 
-export const onMessage = (ws: WebSocket, data: any, client: string) => {
+export const onMessage = async (ws: WebSocket, data: any, client: string) => {
     /**
      * every message has an startTimeStamp, to calculate the latency
      */
@@ -33,9 +34,10 @@ export const onMessage = (ws: WebSocket, data: any, client: string) => {
                 /**
                  * Get the list of available rooms, the received payload is empty
                  */
+                const rooms = await getRooms()
                 ws.send(JSON.stringify({
                     type: WS_MSG_TYPE.GET_AVAILABLE_ROOMS_CLI,
-                    payload: Array.from(RoomModule.roomList.values())
+                    payload: rooms
                 }))
                 break;
             }

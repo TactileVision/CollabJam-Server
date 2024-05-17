@@ -1,5 +1,4 @@
 import { InteractionMode, Room } from "@sharedTypes/roomTypes";
-
 //contain all metadata of one room
 export let roomList: Map<string, Room> = new Map<string, Room>();
 //custom list, to calculate the operations of the vibrotactile device for the distributon

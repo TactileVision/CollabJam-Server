@@ -2,13 +2,39 @@ import { createServer, IncomingMessage } from 'http';
 import { WebSocketServer } from 'ws';
 import { onMessage, onClose } from './webSocket';
 import { defaultRooms } from './util/DefaultRooms';
-import StoreManager from './store/StoreManager';
-import { loadTactonsFromJSON } from './util/FileStorage';
+import { initDB } from './util/dbaccess'
+import * as RoomDB from './apps/rooms/rooms.data-access'
+import { RoomsAPI } from './apps/rooms/rooms.api';
+import { Server } from "socket.io";
+import { ClientToServerEvents, ServerToClientEvents } from '@sharedTypes/websocketTypes';
+import { Logger } from "./util/Logger";
+import { TactonsAPI } from './apps/tactons/tactons.api';
+
 var uuid = require('uuid');
 
 const server = createServer();
 const wss = new WebSocketServer({ noServer: true });
 
+
+
+export const io = new Server<
+    ClientToServerEvents,
+    ServerToClientEvents
+>(server, {
+    cors: {
+        origin: true
+    }
+});
+
+io.on("connection", (socket) => {
+    Logger.info("Socket.io connection established")
+    RoomsAPI(socket);
+    TactonsAPI(socket);
+    socket.on("disconnecting", (reason) => {
+        console.log("Socket.io disconnection!")
+    });
+});
+io.listen(4444);
 
 /**
  * if connection get established successfull, all mesages are handled by onMessage
@@ -68,10 +94,18 @@ server.on("connect", function (req, res) {
     console.log(req);
 })
 
-//TODO Create initial amount of rooms 
-defaultRooms.forEach(room => {
-    StoreManager.createSession(room)
-})
+// //TODO Create initial amount of rooms 
+// defaultRooms.forEach(room => {
+//     StoreManager.createSession(room)
+// })
 
-server.listen(3333);
+initDB().then(async () => {
+    server.listen(3333)
+    defaultRooms.forEach(room => {
+        RoomDB.addRoom(room)
+    })
+
+}
+).catch(console.error)
+
 console.log("Server startet at port 3333");

@@ -5,13 +5,15 @@ import { InteractionMode, Room } from "@sharedTypes/roomTypes";
 import { Logger } from "../../util/Logger";
 import { Socket } from "socket.io";
 import { TactonAPI } from "../tactons/tactons.api";
+import { RoomModel, UserModel } from "../../util/dbaccess";
+import RoomModule from "src/store/RoomModule";
 
 const RoomsAPI = (socket: Socket) => {
 	Logger.info("Setting up Tacton API for new room connection")
 
 	socket.on("disconnecting", (reason) => {
 		Logger.warn(`Removing user ${socket.id} from service because of disconnect`)
-		RoomDB.removeUserFromRoom(socket.id)
+		RoomDB.deleteUser(socket.id)
 	});
 
 	socket.on(WS_MSG_TYPE.GET_AVAILABLE_ROOMS_SERV, async () => {
@@ -19,10 +21,12 @@ const RoomsAPI = (socket: Socket) => {
 		socket.emit(WS_MSG_TYPE.GET_AVAILABLE_ROOMS_CLI, rooms as unknown as Room[])
 	})
 
+	//LOG OUT means logging out from the room
 	socket.on(WS_MSG_TYPE.LOG_OUT, async (req: RequestUpdateUser) => {
 		Logger.info(`Logout from ${req.user.id} requested`)
 		socket.leave(req.roomId)
-		RoomDB.removeUserFromRoom(req.user.id)
+		await RoomDB.removeUserFromRoom(req.user.id)
+		Logger.info(`Notifying users from room ${req.roomId}`)
 		const u = await RoomDB.getUsersOfRoom(req.roomId)
 		io.to(req.roomId).emit(WS_MSG_TYPE.UPDATE_USER_ACCOUNT_CLI, u);
 	})
@@ -34,7 +38,6 @@ const RoomsAPI = (socket: Socket) => {
 		const r = await RoomDB.getRoom(req.id)
 		await RoomDB.assignUserToRoom(req.id, { name: req.userName, id: socket.id, color: "#ec660c" })
 		const user = await RoomDB.getUsersOfRoom(req.id)
-		console.log(user)
 		socket.emit(WS_MSG_TYPE.ENTER_ROOM_CLI, {
 			room: r,
 			userId: socket.id,
@@ -48,6 +51,7 @@ const RoomsAPI = (socket: Socket) => {
 
 	socket.on(WS_MSG_TYPE.UPDATE_ROOM_MODE_SERV, async (req: UpdateRoomMode) => {
 		const room = await RoomDB.getRoom(req.roomId)
+		if (room == undefined) return
 		const rm = room.mode
 		console.log(`Changing interaction mode from ${rm} to ${req.newMode}`)
 		if (rm == req.newMode) return
@@ -66,7 +70,7 @@ const RoomsAPI = (socket: Socket) => {
 
 		if (rm == InteractionMode.Recording) {
 			Logger.info("Stopping recording")
-			TactonAPI.stopRecording(room)
+			TactonAPI.stopRecording(room);
 		} else if (rm == InteractionMode.Playback) {
 			Logger.info("Stopping playback")
 		}

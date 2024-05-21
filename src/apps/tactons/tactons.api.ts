@@ -42,6 +42,11 @@ export const TactonAPI = {
 		if (room.mode == InteractionMode.Recording) {
 			console.log("adding instruciton to tacton recording")
 		}
+	},
+
+	//TODO Add return value
+	getTactonsForRoom: async (roomId: string)  => {
+
 	}
 
 }

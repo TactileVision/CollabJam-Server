@@ -1,9 +1,13 @@
+import mongoose, { HydratedDocument } from 'mongoose';
 import { Collection, Db, MongoClient } from "mongodb";
+import { RoomSchema, UserSchema } from "../apps/rooms/room.schema";
 
 // Connection URL
 const url = 'mongodb://localhost:27017';
 const client = new MongoClient(url);
-let db: Db
+const RoomModel = mongoose.model('Room', RoomSchema)
+const UserModel = mongoose.model('User', UserSchema)
+let db
 let rooms: Collection
 let user: Collection
 // let tactons: Collection
@@ -11,11 +15,8 @@ let user: Collection
 const dbName = 'collabjam';
 
 export const initDB = async () => {
-	await client.connect();
-	db = client.db(dbName);
-	console.log('Connected successfully to server');
-	rooms = db.collection('rooms')
-	user = db.collection('user')
+	b = await mongoose.connect(url, { dbName: dbName });
+
 }
 
 export const getRoomsCollection = (): Collection => {
@@ -24,4 +25,7 @@ export const getRoomsCollection = (): Collection => {
 
 export const getUserCollection = (): Collection => {
 	return user;
+}
+export {
+	RoomModel, UserModel
 }

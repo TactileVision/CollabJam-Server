@@ -33,6 +33,9 @@ export class TactonRecording {
                 name: this.name,
                 favorite: this.favorite,
                 recordDate: this.recordDate == undefined ? new Date() : this.recordDate,
+                description: "",
+                customTags: [],
+                bodyTags: []
             },
             instructions: this.instructions
         })

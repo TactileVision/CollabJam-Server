@@ -8,7 +8,7 @@ import { RoomsAPI } from './apps/rooms/rooms.api';
 import { Server } from "socket.io";
 import { ClientToServerEvents, ServerToClientEvents } from '@sharedTypes/websocketTypes';
 import { Logger } from "./util/Logger";
-import { TactonsAPI } from './apps/tactons/tactons.api';
+import { TactonsWebsocketAPI } from './apps/tactons/tactons.api';
 
 var uuid = require('uuid');
 
@@ -29,7 +29,7 @@ export const io = new Server<
 io.on("connection", (socket) => {
     Logger.info("Socket.io connection established")
     RoomsAPI(socket);
-    TactonsAPI(socket);
+    TactonsWebsocketAPI(socket);
     socket.on("disconnecting", (reason) => {
         console.log("Socket.io disconnection!")
     });

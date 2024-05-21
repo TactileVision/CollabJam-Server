@@ -4,6 +4,7 @@ import * as RoomDB from './rooms.data-access'
 import { InteractionMode, Room } from "@sharedTypes/roomTypes";
 import { Logger } from "../../util/Logger";
 import { Socket } from "socket.io";
+import { TactonAPI } from "../tactons/tactons.api";
 
 const RoomsAPI = (socket: Socket) => {
 	Logger.info("Setting up Tacton API for new room connection")
@@ -41,6 +42,8 @@ const RoomsAPI = (socket: Socket) => {
 			recordings: []
 		})
 		io.to(req.id).emit(WS_MSG_TYPE.UPDATE_USER_ACCOUNT_CLI, user);
+
+
 	})
 
 	socket.on(WS_MSG_TYPE.UPDATE_ROOM_MODE_SERV, async (req: UpdateRoomMode) => {
@@ -63,6 +66,7 @@ const RoomsAPI = (socket: Socket) => {
 
 		if (rm == InteractionMode.Recording) {
 			Logger.info("Stopping recording")
+			TactonAPI.stopRecording(room)
 		} else if (rm == InteractionMode.Playback) {
 			Logger.info("Stopping playback")
 		}
@@ -70,14 +74,14 @@ const RoomsAPI = (socket: Socket) => {
 		RoomDB.setRecordMode(req.roomId, req.newMode)
 		if (req.newMode == InteractionMode.Recording) {
 			Logger.info("Start recording")
-			io.to(req.roomId).emit(WS_MSG_TYPE.UPDATE_ROOM_MODE_CLI, req)
+			//TODO Only start recording when a user presses a but
+			TactonAPI.startRecording(room)
 		} else if (req.newMode == InteractionMode.Playback) {
 			Logger.info("Stopping playback")
-			io.to(req.roomId).emit(WS_MSG_TYPE.UPDATE_ROOM_MODE_CLI, req)
 		} else {
 			Logger.info("Lets jam again")
-			io.to(req.roomId).emit(WS_MSG_TYPE.UPDATE_ROOM_MODE_CLI, req)
 		}
+		io.to(req.roomId).emit(WS_MSG_TYPE.UPDATE_ROOM_MODE_CLI, req)
 
 
 		// if (rm == InteractionMode.Jamming) {

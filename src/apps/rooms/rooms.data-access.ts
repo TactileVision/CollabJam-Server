@@ -10,9 +10,9 @@ const addRoom = async (room: Room) => {
 	// else console.log("Room already exists")
 }
 
-const getRooms = async () => {
+const getRooms = async () : Promise<Room[]> => {
 	const r = getRoomsCollection()
-	return await r.find({}).toArray()
+	return await r.find({}).toArray() as unknown as Room[]
 }
 
 const getRoom = async (id: string): Promise<Room> => {
@@ -44,6 +44,11 @@ const getUsersOfRoom = async (id: string): Promise<User[]> => {
 	const x = await u.find({ roomId: id }).toArray()
 	return x as unknown as User[]
 }
+const getUser = async (id: string): Promise<User> => {
+	const u = getUserCollection()
+	const user = await u.findOne({ id: id }) as unknown as User
+	return user
+}
 
 
 const setRecordMode = async (roomId: string, recordMode: InteractionMode) => {
@@ -58,6 +63,6 @@ export {
 	assignUserToRoom,
 	getUsersOfRoom,
 	removeUserFromRoom,
-	setRecordMode
-
+	setRecordMode,
+	getUser
 }

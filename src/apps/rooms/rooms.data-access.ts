@@ -1,6 +1,13 @@
 import { InteractionMode, Room, User } from "@sharedTypes/roomTypes";
-import { RoomModel, UserModel, getRoomsCollection, getUserCollection } from '../../util/dbaccess'
+import { RoomModel, TactonModel, UserModel } from '../../util/dbaccess'
 import { Logger } from "../../util/Logger";
+import { Tacton } from "@sharedTypes/tactonTypes";
+
+
+// RoomModel.watch().on('change', data =>{
+// 	console.log("Room changed")
+// 	console.log(data)
+// })
 
 const addRoom = async (room: Room) => {
 	const s = await RoomModel.find({ id: room.id })
@@ -45,9 +52,19 @@ const getUser = async (id: string): Promise<User> => {
 	return user
 }
 
+const getTactonsForRoom = async (roomId: string): Promise<Tacton[]> => {
+	const x = await TactonModel.find({ rooms: roomId })
+	console.log(x)
+	x.forEach(t => {
+		console.log(t.instructions)
+	});
+	const y = x as unknown as Tacton[]
+	// x.forEach(tacton => delete tacton.rooms)
+	return y
+}
 
 const setRecordMode = async (roomId: string, recordMode: InteractionMode) => {
-	await RoomModel.updateOne({id: roomId, mode: recordMode})
+	await RoomModel.updateOne({ id: roomId, mode: recordMode })
 }
 
 export {
@@ -59,6 +76,10 @@ export {
 	removeUserFromRoom,
 	setRecordMode,
 	getUser,
-	deleteUser
+	deleteUser, getTactonsForRoom
+}
+
+export async function setNamePrefix(roomId: string, prefix: string) {
+	await RoomModel.updateOne({ id: roomId, recordingNamePrefix: prefix })
 }
 

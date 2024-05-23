@@ -3,50 +3,57 @@ import { RequestSendTactileInstruction, WS_MSG_TYPE } from "@sharedTypes/websock
 import { io } from "../../server";
 import { Socket } from "socket.io";
 import { getRoom, } from "../rooms/rooms.data-access";
-import { InteractionMode, Room } from "@sharedTypes/roomTypes";
 import * as Tactons from "./tactons.domain";
+import * as RoomDB from '../rooms/rooms.data-access';
+import { TactonModel } from "../../util/dbaccess";
 
 export const TactonsWebsocketAPI = (socket: Socket) => {
-	// io.on("connection", (socket) => {
 	Logger.info("Setting up Tacton API for new socket connection")
-
-	//Broadcasts received instructions to all clients in the room
 	socket.on(WS_MSG_TYPE.SEND_INSTRUCTION_SERV, (req: RequestSendTactileInstruction) => {
-		io.to(req.roomId).emit(WS_MSG_TYPE.SEND_INSTRUCTION_CLI, req.instructions);
+		Tactons.tactonProcessors.get(req.roomId)?.inputInstruction(req.instructions)
 
 	})
-	// })
 }
 
-export const TactonAPI = {
-	startRecording: (room: Room) => {
-		console.log("Start recording")
-		let timer = Tactons.timers.get(room.id)
-		if (timer == undefined) {
-			console.log("create timer")
-			Tactons.timers.set(room.id, new Tactons.RecordingTimer(10, room.maxDurationRecord, () => {
-				console.log("Recording ended")
-			}))
-		}
-		timer = Tactons.timers.get(room.id)
-		console.log(timer)
-		timer?.start()
-	},
-	stopRecording: (room: Room) => {
-		const timer = Tactons.timers.get(room.id)
-		timer?.stop()
-	},
-	record: async (req: RequestSendTactileInstruction) => {
-		const room = await getRoom(req.roomId)
-		if (room == undefined) return;
-		if (room.mode == InteractionMode.Recording) {
-			console.log("adding instruciton to tacton recording")
-		}
-	},
+export const TactonProcessorCallbackBindings = (p: Tactons.TactonProcessor, roomId: string) => {
 
-	//TODO Add return value
-	getTactonsForRoom: async (roomId: string)  => {
-
+	p.onOutput = (i) => {
+		io.to(roomId).emit(WS_MSG_TYPE.SEND_INSTRUCTION_CLI, i);
 	}
+	p.onNewInteractionMode = async (mode) => {
+		io.to(roomId).emit(WS_MSG_TYPE.UPDATE_ROOM_MODE_CLI, mode)
+		await RoomDB.setRecordMode(mode.roomId, mode.newMode)
+	}
+	p.onRecordingFinished = async (tactonInstructions) => {
+		console.log("Recording is finished")
+		console.log(tactonInstructions)
+		const r = await getRoom(roomId)
+		let prefix = "unnamed"
+		if (r != undefined) {
+			prefix = r.recordingNamePrefix
+		}
 
+		const tactons = await RoomDB.getTactonsForRoom(roomId)
+		const name = Tactons.appendCounterToPrefixName(tactons, prefix)
+		const newTacton = Tactons.assembleTacton(tactonInstructions, name)
+		io.to(roomId).emit(WS_MSG_TYPE.GET_TACTON_CLI, newTacton)
+		const ts = newTacton as any
+		ts.rooms = [roomId]
+		// console.log(ts)
+		TactonModel.create(ts)
+
+		//TactonModel.add(roomId, t)
+
+		/*TactonMetadata {
+					name: string = prefix + counter
+					favorite: boolean = false
+					recordDate: Date = getDateFromRecorder/Timer
+					description: string = ""
+					customTags: string[] = []
+					bodyTags: string[] = []
+		} */
+		//TODO Load metadata from room to populate metadata aspect of tacton etc
+		//TODO Store loaded tacton in database
+		//TODO Send tacton to clients in room
+	}
 }

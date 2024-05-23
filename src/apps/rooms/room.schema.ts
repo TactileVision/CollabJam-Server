@@ -1,4 +1,3 @@
-import { InteractionMode, User } from "@sharedTypes/roomTypes";
 import * as Mongoose from "mongoose";
 
 // export const InteractionModeSchema = new Mongoose.Schema<InteractionMode>({
@@ -36,6 +35,7 @@ export const RoomSchema = new Mongoose.Schema({
 	id: {
 		type: String,
 		required: true,
+		default: ""
 		// _id: true
 	}, name: String,
 	description: String,

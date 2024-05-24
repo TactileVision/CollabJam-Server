@@ -124,8 +124,8 @@ const addUserToParticipantList = (ws: WebSocket, userID: string, userName: strin
     }
 
     const color = calculateUserColor(roomId, participants.length);
-    const user = { id: userID, name: userName, color: color }
-    participantList.set(roomId, [...participants, user ])
+    const user = { id: userID, name: userName, color: color, muted: false }
+    participantList.set(roomId, [...participants, user])
     return user
 
 }

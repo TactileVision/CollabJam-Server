@@ -6,6 +6,7 @@ import { v4 as uuidv4 } from "uuid";
 import { removePauseFromEnd, turnOffAllOutputs } from "../../util/tacton";
 import { TactonPlayer } from "./tactonplayer";
 import { getTacton } from "../rooms/rooms.data-access";
+import { mergeTactons } from "./merge";
 export interface TactonProcessingRules {
 	allowInputOnPlayback: boolean,
 	startRecordingOn: "firstInput" | "immediate",
@@ -23,18 +24,21 @@ export const getDefaultRules = (): TactonProcessingRules => {
 		maxRecordLength: 5000
 	}
 }
+
 export class TactonProcessor {
 
 	recorder: TactonInstructionRecorder = new TactonInstructionRecorder()
-	timer: RecordingTimer = new RecordingTimer()
+	recordingTimer: RecordingTimer = new RecordingTimer()
 	rules: TactonProcessingRules = getDefaultRules()
 	mode: UpdateRoomMode = { newMode: InteractionMode.Jamming, roomId: "", tactonId: undefined }
 	player: TactonPlayer = new TactonPlayer()
 
 	onOutput: ((instructions: InstructionToClient[]) => void) | null = null
 	onNewInteractionMode: ((newMode: UpdateRoomMode) => void) | null = null
-	onRecordingFinished: ((tacton: TactonInstruction[]) => void) | null = null
+	onRecordingFinished: ((recordedInstructions: TactonInstruction[]) => void) | null = null
 	onPlaybackFinished: (() => void) | null = null
+	// onOverdubbingFinished: ((recordedInstructions: TactonInstruction[], baseInstructions: TactonInstruction[]))
+	baseTacton: Tacton | null = null;
 	// onTactonPlaybackRequested: ((tactonId: string) => Tacton) | null = null
 
 
@@ -48,7 +52,13 @@ export class TactonProcessor {
 				this.recorder.isRecording = true
 			}
 			if (this.recorder.isRecording) {
-				this.recorder.record(instructions)
+				this.recorder.record(instructions, false)
+			}
+		}
+		else if (this.mode.newMode == InteractionMode.Overdubbing) {
+
+			if (this.recorder.isRecording) {
+				this.recorder.record(instructions, true)
 			}
 		}
 		this.onOutput(instructions)
@@ -58,12 +68,24 @@ export class TactonProcessor {
 		Logger.info("New interaction mode requested!!!")
 		console.log(currentMode)
 		console.log(req.newMode)
+		if (currentMode == req.newMode) return
+
+		/* TODO Write some kind of handler classes that make if/else clauses obsolete 
+		onLeavingMode()
+		onEnteringMode()
+		*/
+
+		//Leaving the mode
 		if (currentMode == InteractionMode.Recording) {
 			Logger.info("Stopping recording")
-			this.timer.stopTimer()
+			this.recordingTimer.stopTimer()
 		} else if (currentMode == InteractionMode.Playback) {
-			this.player.stop()
+			this.player.stop(true)
 			Logger.info("Stopping playback")
+		} else if (currentMode == InteractionMode.Overdubbing) {
+			Logger.info("Stopping overdubbing")
+			this.player.stop(true)
+			this.recordingTimer.stopTimer()
 		}
 
 
@@ -86,6 +108,27 @@ export class TactonProcessor {
 				}
 				//TODO Implement playback through intervals, pass those inputs into the recorder as well (for overdubbing)
 			}
+		} else if (req.newMode == InteractionMode.Overdubbing) {
+			if (req.tactonId == undefined) {
+				Logger.error(`No tacton id provided for room ${req.roomId}, switching to record mode`)
+				this.inputInteractionMode(currentMode, { newMode: InteractionMode.Recording, roomId: req.roomId, tactonId: req.tactonId })
+			} else {
+				const t = await getTacton(req.tactonId)
+				console.log(t)
+				if (t != undefined) {
+					console.log("Starting Overdubbing")
+					this.baseTacton = t
+					this.player.start(t)
+					if (!this.recorder.isRecording) {
+						this.startRecording()
+						this.recorder.lastModified = new Date().getTime()
+						this.recorder.isRecording = true
+					}
+				}
+
+				//TODO Implement playback through intervals, pass those inputs into the recorder as well (for overdubbing)
+			}
+
 		} else {
 			Logger.info("Lets jam again")
 		}
@@ -103,8 +146,21 @@ export class TactonProcessor {
 	//Gets called when the timer stops by calling this.timer.stop()
 	private finishRecording() {
 		this.processRecording()
+		Logger.info(this.player.tacton)
+		Logger.info(this.mode)
+		// TODO if we are in overdubbing mode, we have to 
+		let t: TactonInstruction[] = []
+		if (this.mode.newMode == InteractionMode.Overdubbing && this.player.tacton != null) {
+			Logger.info("Merging tactons")
+			const r = this.recorder.stop()
+			console.log(r)
+			t = mergeTactons(this.recorder.stop(), this.player.tacton.instructions)
+		} else {
+			// Logger.info("not merging tactons")
+			t = this.recorder.stop()
+		}
 		if (this.onRecordingFinished != null)
-			this.onRecordingFinished(this.recorder.stop())
+			this.onRecordingFinished(t)
 		if (this.onNewInteractionMode != null) {
 			this.mode.newMode = InteractionMode.Jamming
 			this.onNewInteractionMode(this.mode)
@@ -116,29 +172,28 @@ export class TactonProcessor {
 	startRecording() {
 		Logger.info("Starting Record")
 
-		this.timer.startTimer(1000, this.rules.maxRecordLength, () => {
+		const onRecordingTimerOver = () => {
 			this.finishRecording()
-		})
+		}
+		this.recordingTimer.startTimer(500, this.rules.maxRecordLength, onRecordingTimerOver)
 	}
 
 	constructor() {
 		this.player.onOutput = ((i) => {
-			this.inputInstruction(i)
+			// this.inputInstruction(i)
 			if (this.onOutput != null)
 				this.onOutput(i)
-			Logger.debug("[TactonProccessor] Outupt from player!")
+			// Logger.debug("[TactonProccessor] Outupt from player!")
 		})
-		this.player.onPlaybackFinished = (() => {
+		this.player.onTactonPlayerFinished = (() => {
+			console.log("TactonPlayback finished, stopping playback")
+			if (this.mode.newMode == InteractionMode.Overdubbing) {
+				console.log("Stopping recording as well!")
+				this.recordingTimer.stopTimer()
+			}
 			if (this.onPlaybackFinished != null)
 				this.onPlaybackFinished()
-			Logger.debug("[TactonProccessor] Outupt from player stopped!")
-
-			//TODO What happens depends on the current mode, 
-			/* 
-			overdubbing --> continue
-			playback --> stop
-			
-			*/
+			// Logger.debug("[TactonProccessor] Outupt from player stopped!")
 		})
 	}
 
@@ -155,9 +210,9 @@ export class TactonInstructionRecorder {
 	isRecording: boolean = false
 	instructions: TactonInstruction[] = [] as TactonInstruction[]
 
-	record(newInstructions: InstructionToClient[]) {
+	record(newInstructions: InstructionToClient[], startImmediately: boolean) {
 		this.isRecording = true;
-		if (this.instructions.length > 0) {
+		if (this.instructions.length > 0 || startImmediately) {
 			const timeDiff = new Date().getTime() - this.lastModified
 			const parameter = {
 				wait: {

@@ -26,6 +26,10 @@ export const UserSchema = new Mongoose.Schema({
 	roomId: {
 		type: String,
 		required: false
+	},
+	muted: {
+		type: Boolean,
+		required: true
 	}
 })
 

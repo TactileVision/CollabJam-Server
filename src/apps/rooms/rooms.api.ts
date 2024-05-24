@@ -34,7 +34,7 @@ const RoomsAPI = (socket: Socket) => {
 		socket.join(req.id)
 
 		const r = await RoomDB.getRoom(req.id)
-		await RoomDB.assignUserToRoom(req.id, { name: req.userName, id: socket.id, color: "#ec660c" })
+		await RoomDB.assignUserToRoom(req.id, { name: req.userName, id: socket.id, color: "#ec660c", muted: false })
 		const tactons = await RoomDB.getTactonsForRoom(req.id)
 		const user = await RoomDB.getUsersOfRoom(req.id)
 		socket.emit(WS_MSG_TYPE.ENTER_ROOM_CLI, {

@@ -7,6 +7,7 @@ import * as Tactons from "./tactons.domain";
 import * as RoomDB from '../rooms/rooms.data-access';
 import { TactonModel } from "../../util/dbaccess";
 import { InteractionMode } from "@sharedTypes/roomTypes";
+import { mergeTactons } from "./merge";
 
 export const TactonsWebsocketAPI = (socket: Socket) => {
 	Logger.info("Setting up Tacton API for new socket connection")
@@ -25,9 +26,11 @@ export const TactonProcessorCallbackBindings = (p: Tactons.TactonProcessor, room
 		io.to(roomId).emit(WS_MSG_TYPE.UPDATE_ROOM_MODE_CLI, mode)
 		await RoomDB.setRecordMode(mode.roomId, mode.newMode)
 	}
-	p.onRecordingFinished = async (tactonInstructions) => {
+
+	p.onRecordingFinished = async (recordedInstructions) => {
 		console.log("Recording is finished")
-		console.log(tactonInstructions)
+
+		console.log(recordedInstructions)
 		const r = await getRoom(roomId)
 		let prefix = "unnamed"
 		if (r != undefined) {
@@ -36,11 +39,10 @@ export const TactonProcessorCallbackBindings = (p: Tactons.TactonProcessor, room
 
 		const tactons = await RoomDB.getTactonsForRoom(roomId)
 		const name = Tactons.appendCounterToPrefixName(tactons, prefix)
-		const newTacton = Tactons.assembleTacton(tactonInstructions, name)
+		const newTacton = Tactons.assembleTacton(recordedInstructions, name)
 		io.to(roomId).emit(WS_MSG_TYPE.GET_TACTON_CLI, newTacton)
 		const ts = newTacton as any
 		ts.rooms = [roomId]
-		// console.log(ts)
 		TactonModel.create(ts)
 
 		//TactonModel.add(roomId, t)
@@ -63,4 +65,5 @@ export const TactonProcessorCallbackBindings = (p: Tactons.TactonProcessor, room
 		RoomDB.setRecordMode(roomId, InteractionMode.Jamming)
 		io.to(roomId).emit(WS_MSG_TYPE.UPDATE_ROOM_MODE_CLI, { newMode: InteractionMode.Jamming, roomId: roomId, tactonId: undefined })
 	}
+
 }

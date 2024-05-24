@@ -45,13 +45,13 @@ const RoomsAPI = (socket: Socket) => {
 		})
 		io.to(req.id).emit(WS_MSG_TYPE.UPDATE_USER_ACCOUNT_CLI, user);
 
-		if (r?.mode == InteractionMode.Playback) {
-			const tid = tactonProcessors.get(r.id)?.player.tacton?.uuid
-			if (tid != undefined) {
-				socket.emit(WS_MSG_TYPE.UPDATE_ROOM_MODE_CLI, { roomId: r.id, tactonId: tid, newMode: InteractionMode.Playback })
+		// if (r?.mode == InteractionMode.Playback) {
+			// const tid = tactonProcessors.get(r.id)?.modeSwitcher..tacton?.uuid
+			// if (tid != undefined) {
+			// 	socket.emit(WS_MSG_TYPE.UPDATE_ROOM_MODE_CLI, { roomId: r.id, tactonId: tid, newMode: InteractionMode.Playback })
 
-			}
-		}
+			// }
+		// }
 
 
 	})

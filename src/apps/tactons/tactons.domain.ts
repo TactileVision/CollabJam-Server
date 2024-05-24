@@ -1,4 +1,4 @@
-import { InstructionToClient, Tacton, TactonInstruction } from "@sharedTypes/tactonTypes";
+import { InstructionToClient, Tacton, TactonInstruction, impl } from "@sharedTypes/tactonTypes";
 import { Logger } from "../../util/Logger";
 import { UpdateRoomMode } from "@sharedTypes/websocketTypes";
 import { InteractionMode } from "@sharedTypes/roomTypes";
@@ -7,6 +7,9 @@ import { removePauseFromEnd, turnOffAllOutputs } from "../../util/tacton";
 import { TactonPlayer } from "./tactonplayer";
 import { getTacton } from "../rooms/rooms.data-access";
 import { mergeTactons } from "./merge";
+import exp = require("constants");
+import { InstructionSetParameterSchema } from "./tacton.schema";
+import { info } from "console";
 export interface TactonProcessingRules {
 	allowInputOnPlayback: boolean,
 	startRecordingOn: "firstInput" | "immediate",
@@ -25,176 +28,210 @@ export const getDefaultRules = (): TactonProcessingRules => {
 	}
 }
 
-export class TactonProcessor {
+interface InteractionHandler {
+	onEnteringMode: (info: UpdateRoomMode) => void
+	onLeavingMode: (info: UpdateRoomMode) => void
+	onInstructions: (instructions: InstructionToClient[]) => void
+	onHasFinished: ((instructions: TactonInstruction[] | null) => void) | null
+}
 
-	recorder: TactonInstructionRecorder = new TactonInstructionRecorder()
-	recordingTimer: RecordingTimer = new RecordingTimer()
-	rules: TactonProcessingRules = getDefaultRules()
-	mode: UpdateRoomMode = { newMode: InteractionMode.Jamming, roomId: "", tactonId: undefined }
+interface OutputHandler {
+	onOutput: ((instructions: InstructionToClient[]) => void) | null
+}
+
+
+
+export class ModeSwitcher {
+	handler: Map<InteractionMode, InteractionHandler> = new Map<InteractionMode, InteractionHandler>()
+	currentHandler: InteractionHandler | undefined = undefined
+	modeUpdateRequested = (currentMode: InteractionMode, info: UpdateRoomMode): InteractionMode => {
+		console.log(currentMode)
+		console.log(info.newMode)
+		if (currentMode == info.newMode)
+			return info.newMode
+
+		//TODO Check if we should even switch!
+
+		const handler = this.handler.get(currentMode)
+		if (handler != null) {
+			handler.onLeavingMode(info)
+		}
+
+		const newHandler = this.handler.get(info.newMode)
+		if (newHandler != null) {
+			newHandler.onEnteringMode(info)
+		}
+		this.currentHandler = newHandler
+
+		return info.newMode
+	}
+}
+
+//Room Logic
+
+class JammingHandler implements InteractionHandler, OutputHandler {
+	onOutput: ((instructions: InstructionToClient[]) => void) | null = null;
+	onEnteringMode: (info: UpdateRoomMode) => void = () => {
+
+	};
+	onLeavingMode: (info: UpdateRoomMode) => void = () => {
+
+	};
+	onInstructions: (instructions: InstructionToClient[]) => void = (instructions) => {
+		if (this.onOutput != null)
+			this.onOutput(instructions)
+
+	};
+	onHasFinished: ((instructions: TactonInstruction[] | null) => void) | null = () => {
+
+	};;
+}
+class PlaybackHandler implements InteractionHandler, OutputHandler {
 	player: TactonPlayer = new TactonPlayer()
 
+	async onEnteringMode(info: UpdateRoomMode) {
+		if (info.tactonId == undefined) {
+			Logger.error(`No tacton id provided for room ${info.roomId}`)
+		} else {
+			const t = await getTacton(info.tactonId)
+			if (t != undefined) {
+				console.log("Starting playback of tacton alder")
+				this.player.start(t)
+			}
+		}
+	};
+	onLeavingMode(info: UpdateRoomMode) {
+		this.player.stop(true)
+	};
+	onInstructions(instructions: InstructionToClient[]) {
+		if (this.onOutput != null)
+			this.onOutput(instructions)
+	};
+
+
+	constructor() {
+		this.player.onTactonPlayerFinished = () => {
+			if (this.onHasFinished != null)
+				this.onHasFinished(null)
+		}
+		this.player.onOutput = (i) => {
+			if (this.onOutput != null) {
+				this.onOutput(i)
+			}
+		}
+	}
+	onOutput: ((instructions: InstructionToClient[]) => void) | null = null
+
+	onHasFinished: ((instructions: TactonInstruction[] | null) => void) | null = null;
+
+}
+
+class RecordingHandler implements InteractionHandler, OutputHandler {
+	recorder: TactonInstructionRecorder = new TactonInstructionRecorder()
+	recordingTimer: RecordingTimer = new RecordingTimer()
+	rules: TactonProcessingRules = { allowInputOnPlayback: false, loop: false, startRecordingOn: "firstInput", maxRecordLength: 5000 }
+
+	onOutput: ((instructions: InstructionToClient[]) => void) | null = null
+	onHasFinished: ((instructions: TactonInstruction[] | null) => void) | null = null;
+
+	onEnteringMode(info: UpdateRoomMode) {
+		console.log("enetring record mode")
+		if (this.rules.startRecordingOn == "immediate") {
+			this.recordingTimer.startTimer(500, this.rules.maxRecordLength, () => { this.onRecordingTimerOver() })
+			this.recorder.record([], true)
+		}
+	}
+	onLeavingMode(info: UpdateRoomMode) {
+		Logger.info("Stopping recording")
+		this.recordingTimer.stopTimer()
+		this.recorder.reset()
+	};
+	onInstructions(instructions: InstructionToClient[]) {
+		if (this.rules.startRecordingOn == "firstInput" && this.recorder.isRecording == false) {
+			this.recordingTimer.startTimer(500, this.rules.maxRecordLength, () => { this.onRecordingTimerOver() })
+		}
+		this.recorder.record(instructions, false)
+		if (this.onOutput != null)
+			this.onOutput(instructions)
+	};
+
+	onRecordingTimerOver() {
+		console.log("Timer is over")
+		const t = this.recorder.stop()
+		console.log(t)
+		turnOffAllOutputs(t, this.recorder.lastModified);
+		removePauseFromEnd(t);
+		if (this.onHasFinished != null)
+			this.onHasFinished(t)
+	}
+
+	constructor() {
+
+	}
+
+}
+
+
+
+
+
+export class TactonProcessor {
+
+	modeSwitcher: ModeSwitcher = new ModeSwitcher()
+	jammingHandler: JammingHandler = new JammingHandler()
+	playbackHandler: PlaybackHandler = new PlaybackHandler()
+	recordingHandler: RecordingHandler = new RecordingHandler()
 	onOutput: ((instructions: InstructionToClient[]) => void) | null = null
 	onNewInteractionMode: ((newMode: UpdateRoomMode) => void) | null = null
 	onRecordingFinished: ((recordedInstructions: TactonInstruction[]) => void) | null = null
 	onPlaybackFinished: (() => void) | null = null
 	// onOverdubbingFinished: ((recordedInstructions: TactonInstruction[], baseInstructions: TactonInstruction[]))
-	baseTacton: Tacton | null = null;
-	// onTactonPlaybackRequested: ((tactonId: string) => Tacton) | null = null
 
 
-	setRules(rules: TactonProcessingRules) { this.rules = rules }
+	// setRules(rules: TactonProcessingRules) { this.rules = rules }
 
 	inputInstruction(instructions: InstructionToClient[]) {
-		if (this.onOutput == null) return
-		if (this.mode.newMode == InteractionMode.Recording) {
-			if (!this.recorder.isRecording && this.rules.startRecordingOn == "firstInput") {
-				this.startRecording()
-				this.recorder.isRecording = true
-			}
-			if (this.recorder.isRecording) {
-				this.recorder.record(instructions, false)
-			}
+		if (this.modeSwitcher.currentHandler != null) {
+			this.modeSwitcher.currentHandler?.onInstructions(instructions)
 		}
-		else if (this.mode.newMode == InteractionMode.Overdubbing) {
-
-			if (this.recorder.isRecording) {
-				this.recorder.record(instructions, true)
-			}
-		}
-		this.onOutput(instructions)
 	}
 
 	async inputInteractionMode(currentMode: InteractionMode, req: UpdateRoomMode) {
-		Logger.info("New interaction mode requested!!!")
-		console.log(currentMode)
-		console.log(req.newMode)
-		if (currentMode == req.newMode) return
-
-		/* TODO Write some kind of handler classes that make if/else clauses obsolete 
-		onLeavingMode()
-		onEnteringMode()
-		*/
-
-		//Leaving the mode
-		if (currentMode == InteractionMode.Recording) {
-			Logger.info("Stopping recording")
-			this.recordingTimer.stopTimer()
-		} else if (currentMode == InteractionMode.Playback) {
-			this.player.stop(true)
-			Logger.info("Stopping playback")
-		} else if (currentMode == InteractionMode.Overdubbing) {
-			Logger.info("Stopping overdubbing")
-			this.player.stop(true)
-			this.recordingTimer.stopTimer()
+		const m = this.modeSwitcher.modeUpdateRequested(currentMode, req)
+		if (m != currentMode) {
+			if (this.onNewInteractionMode != null)
+				this.onNewInteractionMode(req)
 		}
-
-
-		// RoomDB.setRecordMode(req.roomId, req.newMode)
-		if (req.newMode == InteractionMode.Recording) {
-			if (this.rules.startRecordingOn == "immediate") {
-				this.startRecording()
-			}
-		} else if (req.newMode == InteractionMode.Playback) {
-			console.log("New mode is  playback")
-			console.log(req)
-			if (req.tactonId == undefined) {
-				Logger.error(`No tacton id provided for room ${req.roomId}`)
-			} else {
-				const t = await getTacton(req.tactonId)
-				console.log(t)
-				if (t != undefined) {
-					console.log("Starting playback of tacton alder")
-					this.player.start(t)
-				}
-				//TODO Implement playback through intervals, pass those inputs into the recorder as well (for overdubbing)
-			}
-		} else if (req.newMode == InteractionMode.Overdubbing) {
-			if (req.tactonId == undefined) {
-				Logger.error(`No tacton id provided for room ${req.roomId}, switching to record mode`)
-				this.inputInteractionMode(currentMode, { newMode: InteractionMode.Recording, roomId: req.roomId, tactonId: req.tactonId })
-			} else {
-				const t = await getTacton(req.tactonId)
-				console.log(t)
-				if (t != undefined) {
-					console.log("Starting Overdubbing")
-					this.baseTacton = t
-					this.player.start(t)
-					if (!this.recorder.isRecording) {
-						this.startRecording()
-						this.recorder.lastModified = new Date().getTime()
-						this.recorder.isRecording = true
-					}
-				}
-
-				//TODO Implement playback through intervals, pass those inputs into the recorder as well (for overdubbing)
-			}
-
-		} else {
-			Logger.info("Lets jam again")
-		}
-
-		this.mode = req
-		if (this.onNewInteractionMode == null) return
-		this.onNewInteractionMode(req)
-
-	}
-
-	private processRecording() {
-		turnOffAllOutputs(this.recorder.instructions, this.recorder.lastModified);
-		removePauseFromEnd(this.recorder.instructions);
-	}
-	//Gets called when the timer stops by calling this.timer.stop()
-	private finishRecording() {
-		this.processRecording()
-		Logger.info(this.player.tacton)
-		Logger.info(this.mode)
-		// TODO if we are in overdubbing mode, we have to 
-		let t: TactonInstruction[] = []
-		if (this.mode.newMode == InteractionMode.Overdubbing && this.player.tacton != null) {
-			Logger.info("Merging tactons")
-			const r = this.recorder.stop()
-			console.log(r)
-			t = mergeTactons(this.recorder.stop(), this.player.tacton.instructions)
-		} else {
-			// Logger.info("not merging tactons")
-			t = this.recorder.stop()
-		}
-		if (this.onRecordingFinished != null)
-			this.onRecordingFinished(t)
-		if (this.onNewInteractionMode != null) {
-			this.mode.newMode = InteractionMode.Jamming
-			this.onNewInteractionMode(this.mode)
-		}
-
-		this.recorder.reset()
-	}
-
-	startRecording() {
-		Logger.info("Starting Record")
-
-		const onRecordingTimerOver = () => {
-			this.finishRecording()
-		}
-		this.recordingTimer.startTimer(500, this.rules.maxRecordLength, onRecordingTimerOver)
 	}
 
 	constructor() {
-		this.player.onOutput = ((i) => {
-			// this.inputInstruction(i)
+		this.modeSwitcher.handler.set(InteractionMode.Jamming, this.jammingHandler)
+		this.modeSwitcher.handler.set(InteractionMode.Playback, this.playbackHandler)
+		this.modeSwitcher.handler.set(InteractionMode.Recording, this.recordingHandler)
+
+		const output = (i: InstructionToClient[]) => {
+			console.log("Output")
 			if (this.onOutput != null)
 				this.onOutput(i)
-			// Logger.debug("[TactonProccessor] Outupt from player!")
-		})
-		this.player.onTactonPlayerFinished = (() => {
-			console.log("TactonPlayback finished, stopping playback")
-			if (this.mode.newMode == InteractionMode.Overdubbing) {
-				console.log("Stopping recording as well!")
-				this.recordingTimer.stopTimer()
-			}
+		}
+		this.playbackHandler.onOutput = (i) => { output(i) }
+		this.recordingHandler.onOutput = (i) => { output(i) }
+		this.jammingHandler.onOutput = (i) => { output(i) }
+		this.playbackHandler.onHasFinished = () => {
 			if (this.onPlaybackFinished != null)
 				this.onPlaybackFinished()
-			// Logger.debug("[TactonProccessor] Outupt from player stopped!")
-		})
+		}
+
+		this.recordingHandler.onHasFinished = (i) => {
+			console.log("Recording fifff")
+			if (this.onRecordingFinished != null) {
+				if (i != null)
+					this.onRecordingFinished(i)
+				else
+					this.onRecordingFinished([])
+
+			}
+		}
 	}
 
 }
@@ -211,6 +248,7 @@ export class TactonInstructionRecorder {
 	instructions: TactonInstruction[] = [] as TactonInstruction[]
 
 	record(newInstructions: InstructionToClient[], startImmediately: boolean) {
+		console.log("Recording")
 		this.isRecording = true;
 		if (this.instructions.length > 0 || startImmediately) {
 			const timeDiff = new Date().getTime() - this.lastModified
@@ -280,6 +318,7 @@ export class RecordingTimer {
 
 	}
 	stopTimer() {
+		console.log("Stopping the RecordingTimer now!!!")
 		if (this.intervalHandle != null) {
 			console.log("Stopping timer");
 			clearInterval(this.intervalHandle);

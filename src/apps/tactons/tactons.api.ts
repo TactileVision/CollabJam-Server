@@ -6,6 +6,7 @@ import { getRoom, } from "../rooms/rooms.data-access";
 import * as Tactons from "./tactons.domain";
 import * as RoomDB from '../rooms/rooms.data-access';
 import { TactonModel } from "../../util/dbaccess";
+import { InteractionMode } from "@sharedTypes/roomTypes";
 
 export const TactonsWebsocketAPI = (socket: Socket) => {
 	Logger.info("Setting up Tacton API for new socket connection")
@@ -55,5 +56,11 @@ export const TactonProcessorCallbackBindings = (p: Tactons.TactonProcessor, room
 		//TODO Load metadata from room to populate metadata aspect of tacton etc
 		//TODO Store loaded tacton in database
 		//TODO Send tacton to clients in room
+	}
+
+	p.onPlaybackFinished = async () => {
+		console.log("Playback of tacton is finished")
+		RoomDB.setRecordMode(roomId, InteractionMode.Jamming)
+		io.to(roomId).emit(WS_MSG_TYPE.UPDATE_ROOM_MODE_CLI, { newMode: InteractionMode.Jamming, roomId: roomId, tactonId: undefined })
 	}
 }

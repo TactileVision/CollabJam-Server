@@ -62,7 +62,16 @@ const getTactonsForRoom = async (roomId: string): Promise<Tacton[]> => {
 	// x.forEach(tacton => delete tacton.rooms)
 	return y
 }
+const getTacton = async (tactonId: string): Promise<Tacton | null> => {
+	console
+	const x = await TactonModel.findOne({ uuid: tactonId })
+	if (x != undefined) {
+		const t = x as unknown as Tacton
+		return t
+	}
 
+	return null
+}
 const setRecordMode = async (roomId: string, recordMode: InteractionMode) => {
 	await RoomModel.updateOne({ id: roomId, mode: recordMode })
 }
@@ -76,7 +85,9 @@ export {
 	removeUserFromRoom,
 	setRecordMode,
 	getUser,
-	deleteUser, getTactonsForRoom
+	deleteUser,
+	getTactonsForRoom,
+	getTacton
 }
 
 export async function setNamePrefix(roomId: string, prefix: string) {

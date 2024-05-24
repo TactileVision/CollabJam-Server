@@ -4,6 +4,8 @@ import { UpdateRoomMode } from "@sharedTypes/websocketTypes";
 import { InteractionMode } from "@sharedTypes/roomTypes";
 import { v4 as uuidv4 } from "uuid";
 import { removePauseFromEnd, turnOffAllOutputs } from "../../util/tacton";
+import { TactonPlayer } from "./tactonplayer";
+import { getTacton } from "../rooms/rooms.data-access";
 export interface TactonProcessingRules {
 	allowInputOnPlayback: boolean,
 	startRecordingOn: "firstInput" | "immediate",
@@ -27,12 +29,13 @@ export class TactonProcessor {
 	timer: RecordingTimer = new RecordingTimer()
 	rules: TactonProcessingRules = getDefaultRules()
 	mode: UpdateRoomMode = { newMode: InteractionMode.Jamming, roomId: "", tactonId: undefined }
-
+	player: TactonPlayer = new TactonPlayer()
 
 	onOutput: ((instructions: InstructionToClient[]) => void) | null = null
 	onNewInteractionMode: ((newMode: UpdateRoomMode) => void) | null = null
 	onRecordingFinished: ((tacton: TactonInstruction[]) => void) | null = null
-	onTactonPlaybackRequested: ((tactonId: string) => Tacton) | null = null
+	onPlaybackFinished: (() => void) | null = null
+	// onTactonPlaybackRequested: ((tactonId: string) => Tacton) | null = null
 
 
 	setRules(rules: TactonProcessingRules) { this.rules = rules }
@@ -51,13 +54,15 @@ export class TactonProcessor {
 		this.onOutput(instructions)
 	}
 
-	inputInteractionMode(currentMode: InteractionMode, req: UpdateRoomMode) {
+	async inputInteractionMode(currentMode: InteractionMode, req: UpdateRoomMode) {
 		Logger.info("New interaction mode requested!!!")
 		console.log(currentMode)
+		console.log(req.newMode)
 		if (currentMode == InteractionMode.Recording) {
 			Logger.info("Stopping recording")
 			this.timer.stopTimer()
 		} else if (currentMode == InteractionMode.Playback) {
+			this.player.stop()
 			Logger.info("Stopping playback")
 		}
 
@@ -68,7 +73,19 @@ export class TactonProcessor {
 				this.startRecording()
 			}
 		} else if (req.newMode == InteractionMode.Playback) {
-			Logger.info("Stopping playback")
+			console.log("New mode is  playback")
+			console.log(req)
+			if (req.tactonId == undefined) {
+				Logger.error(`No tacton id provided for room ${req.roomId}`)
+			} else {
+				const t = await getTacton(req.tactonId)
+				console.log(t)
+				if (t != undefined) {
+					console.log("Starting playback of tacton alder")
+					this.player.start(t)
+				}
+				//TODO Implement playback through intervals, pass those inputs into the recorder as well (for overdubbing)
+			}
 		} else {
 			Logger.info("Lets jam again")
 		}
@@ -104,8 +121,26 @@ export class TactonProcessor {
 		})
 	}
 
-	playback(t: Tacton) { }
-	// jam() { }
+	constructor() {
+		this.player.onOutput = ((i) => {
+			this.inputInstruction(i)
+			if (this.onOutput != null)
+				this.onOutput(i)
+			Logger.debug("[TactonProccessor] Outupt from player!")
+		})
+		this.player.onPlaybackFinished = (() => {
+			if (this.onPlaybackFinished != null)
+				this.onPlaybackFinished()
+			Logger.debug("[TactonProccessor] Outupt from player stopped!")
+
+			//TODO What happens depends on the current mode, 
+			/* 
+			overdubbing --> continue
+			playback --> stop
+			
+			*/
+		})
+	}
 
 }
 

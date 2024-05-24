@@ -1,7 +1,7 @@
 import { RequestEnterRoom, RequestUpdateUser, UpdateRoomMode, WS_MSG_TYPE } from "@sharedTypes/websocketTypes";
 import { io } from "../../server";
 import * as RoomDB from './rooms.data-access'
-import { Room } from "@sharedTypes/roomTypes";
+import { InteractionMode, Room } from "@sharedTypes/roomTypes";
 import { Logger } from "../../util/Logger";
 import { Socket } from "socket.io";
 import { tactonProcessors } from "../tactons/tactons.domain";
@@ -44,6 +44,14 @@ const RoomsAPI = (socket: Socket) => {
 			recordings: tactons
 		})
 		io.to(req.id).emit(WS_MSG_TYPE.UPDATE_USER_ACCOUNT_CLI, user);
+
+		if (r?.mode == InteractionMode.Playback) {
+			const tid = tactonProcessors.get(r.id)?.player.tacton?.uuid
+			if (tid != undefined) {
+				socket.emit(WS_MSG_TYPE.UPDATE_ROOM_MODE_CLI, { roomId: r.id, tactonId: tid, newMode: InteractionMode.Playback })
+
+			}
+		}
 
 
 	})

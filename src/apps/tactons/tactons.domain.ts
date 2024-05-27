@@ -129,7 +129,7 @@ class PlaybackHandler implements InteractionHandler, OutputHandler {
 class RecordingHandler implements InteractionHandler, OutputHandler {
 	recorder: TactonInstructionRecorder = new TactonInstructionRecorder()
 	recordingTimer: RecordingTimer = new RecordingTimer()
-	rules: TactonProcessingRules = { allowInputOnPlayback: false, loop: false, startRecordingOn: "firstInput", maxRecordLength: 5000 }
+	rules: TactonProcessingRules = { allowInputOnPlayback: false, loop: false, startRecordingOn: "firstInput", maxRecordLength: 10000 }
 
 	onOutput: ((instructions: InstructionToClient[]) => void) | null = null
 	onHasFinished: ((instructions: TactonInstruction[] | null) => void) | null = null;
@@ -346,12 +346,33 @@ export const assembleTacton = (instructions: TactonInstruction[], name: string):
 	} as Tacton
 }
 
+
+
 export const appendCounterToPrefixName = (tactons: Tacton[], prefix: string): string => {
-	const tactonsWithSamePrefix = tactons.filter(e => {
-		return e.metadata.name.startsWith(prefix + "-") == true
+	const names = tactons.map(t => {
+		return t.metadata.name
 	})
-	let len = tactonsWithSamePrefix.length.toString()
-	return prefix + "-" + len
+	var collator = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' });
+	var sorted = names.sort(collator.compare)
+	const highestPrefix = sorted.pop()
+
+	console.log(highestPrefix)
+	console.log(names)
+	if (highestPrefix != undefined) {
+		const num = highestPrefix.split("-").pop()
+		if (num != undefined) {
+			let len = parseInt(num) + 1
+			return prefix + "-" +len
+		}
+	}
+	return "foo"
+
+}
+
+export const getPrefixFromFilename = (filename: string): string => {
+	const splitted = filename.split("-")
+	splitted.pop()
+	return splitted.join("-")
 }
 
 

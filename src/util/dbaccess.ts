@@ -18,7 +18,7 @@ const dbName = 'collabjam';
 
 export const initDB = async () => {
 	db = await mongoose.connect(url, { dbName: dbName });
-
+	await UserModel.deleteMany({}) //Remove all of the Kaderleichen from the server
 }
 
 export const getRoomsCollection = (): Collection => {

@@ -67,8 +67,8 @@ export const TactonsWebsocketAPI = (socket: Socket) => {
 		}
 
 		const save = await s.save()
-		console.log(s)
-		console.log(save)
+		// console.log(s)
+		// console.log(save)
 
 		//TODO if something went wrong, send back the old metadata alder
 		io.to(req.roomId).emit(WS_MSG_TYPE.CHANGE_TACTON_METADATA_CLI, req)
@@ -79,21 +79,21 @@ export const TactonsWebsocketAPI = (socket: Socket) => {
 		//TODO Think about the merit of storing each change into the mongo db
 		let tacton = await TactonModel.findOne({ uuid: req.tactonId })
 		if (tacton == undefined) return
-		console.log(tacton)
+		// console.log(tacton)
 		//TODO 😅
 
 		tacton.instructions = req.tacton.instructions as any
 
-		console.log(req.tacton.instructions)
+		// console.log(req.tacton.instructions)
 		// const x = await tacton.updateOne({ uuid: req.tactonId },
 		// 	{
 		// 		name: "foo-0",
 		// 		instructions: req.tacton.instructions,
 		// 	})
 		const x = await tacton.save()
-		console.log(tacton.instructions)
+		// console.log(tacton.instructions)
 
-		console.log(x)
+		// console.log(x)
 		io.to(req.roomId).emit(WS_MSG_TYPE.UPDATE_TACTON_CLI, { roomId: req.roomId, tacton: tacton as unknown as Tacton, tactonId: req.tactonId })
 	})
 	/*             case WS_MSG_TYPE.UPDATE_TACTON_SERV: {
@@ -143,17 +143,20 @@ export const TactonsWebsocketAPI = (socket: Socket) => {
 export const TactonProcessorCallbackBindings = (p: Tactons.TactonProcessor, roomId: string) => {
 
 	p.onOutput = (i) => {
+		// console.log(i)
 		io.to(roomId).emit(WS_MSG_TYPE.SEND_INSTRUCTION_CLI, i);
 	}
 	p.onNewInteractionMode = async (mode) => {
+		// Logger.info("Switching interaction modes")
+		// Logger.info(mode)
 		io.to(roomId).emit(WS_MSG_TYPE.UPDATE_ROOM_MODE_CLI, mode)
 		await RoomDB.setRecordMode(mode.roomId, mode.newMode)
 	}
 
 	p.onRecordingFinished = async (recordedInstructions) => {
-		console.log("Recording is finished")
+		// Logger.info("Recording is finished")
 
-		console.log(recordedInstructions)
+		// console.log(recordedInstructions)
 		const r = await getRoom(roomId)
 		let prefix = "unnamed"
 		if (r != undefined) {
@@ -185,7 +188,8 @@ export const TactonProcessorCallbackBindings = (p: Tactons.TactonProcessor, room
 	}
 
 	p.onPlaybackFinished = async () => {
-		console.log("Playback of tacton is finished")
+		// console.log("Playback of tacton is finished")
+		// console.log(roomId)
 		RoomDB.setRecordMode(roomId, InteractionMode.Jamming)
 		io.to(roomId).emit(WS_MSG_TYPE.UPDATE_ROOM_MODE_CLI, { newMode: InteractionMode.Jamming, roomId: roomId, tactonId: undefined })
 	}

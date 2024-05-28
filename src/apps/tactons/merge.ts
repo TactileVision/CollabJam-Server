@@ -77,7 +77,7 @@ export const mergeTactons = (...tactons: TactonInstruction[][]) => {
 				}
 		}
 
-		console.log({ blocksByChannel: JSON.parse(JSON.stringify(blocksByChannel)) });
+		// console.log({ blocksByChannel: JSON.parse(JSON.stringify(blocksByChannel)) });
 
 		// Merge blocks with already existing merged blocks from upper layers
 		const newMergedBlocksByChannel: ChannelInstructionBlock[][] = Array.from({ length: 4 }, () => []);
@@ -133,12 +133,12 @@ export const mergeTactons = (...tactons: TactonInstruction[][]) => {
 		});
 
 		mergedBlocksByChannel = newMergedBlocksByChannel;
-		console.log({ mergedBlocksByChannel: JSON.parse(JSON.stringify(mergedBlocksByChannel)) });
+		// console.log({ mergedBlocksByChannel: JSON.parse(JSON.stringify(mergedBlocksByChannel)) });
 	})
 
 	// Optimize blocks per channel by merging two neighboured blocks with same intensity into one block
 	const optimizedBlocksByChannel = optimizeBlocksByChannel(mergedBlocksByChannel);
-	console.log({ optimizedBlocksByChannel: JSON.parse(JSON.stringify(optimizedBlocksByChannel)) });
+	// console.log({ optimizedBlocksByChannel: JSON.parse(JSON.stringify(optimizedBlocksByChannel)) });
 
 	// Brings blocks into one sorted timeline over all channels
 	const mergedBlocks = optimizedBlocksByChannel.flatMap(list => list).sort((a, b) => a.startMs - b.startMs);
@@ -197,7 +197,7 @@ export const mergeTactons = (...tactons: TactonInstruction[][]) => {
 		}
 	});
 
-	console.log({ instructions })
+	// console.log({ instructions })
 
 	// Optimize instructions to merge set parameter instructions that occur at the same time with the same intensity
 	const optimizedInstructions: TactonInstruction[] = [];
@@ -233,7 +233,7 @@ export const mergeTactons = (...tactons: TactonInstruction[][]) => {
 		optimizedInstructions.push(currentInstruction);
 	}
 
-	console.log({ optimizedInstructions })
+	// console.log({ optimizedInstructions })
 
 	return optimizedInstructions;
 }

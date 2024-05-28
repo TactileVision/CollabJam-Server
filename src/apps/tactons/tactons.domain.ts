@@ -41,8 +41,8 @@ export class ModeSwitcher {
 	handler: Map<InteractionMode, InteractionHandler> = new Map<InteractionMode, InteractionHandler>()
 	currentHandler: InteractionHandler | undefined = undefined
 	modeUpdateRequested = (currentMode: InteractionMode, info: UpdateRoomMode): InteractionMode => {
-		console.log(currentMode)
-		console.log(info.newMode)
+		// console.log(currentMode)
+		// console.log(info.newMode)
 		if (currentMode == info.newMode)
 			return info.newMode
 
@@ -91,7 +91,7 @@ class PlaybackHandler implements InteractionHandler, OutputHandler {
 		} else {
 			const t = await getTacton(info.tactonId)
 			if (t != undefined) {
-				console.log("Starting playback of tacton alder")
+				// console.log("Starting playback of tacton alder")
 				this.player.start(t)
 			}
 		}
@@ -131,7 +131,7 @@ class RecordingHandler implements InteractionHandler, OutputHandler {
 	onHasFinished: ((instructions: TactonInstruction[] | null) => void) | null = null;
 
 	onEnteringMode(info: UpdateRoomMode) {
-		console.log("enetring record mode")
+		//console.log("enetring record mode")
 		if (this.rules.startRecordingOn == "immediate") {
 			this.recordingTimer.startTimer(500, this.rules.maxRecordLength, () => { this.onRecordingTimerOver() })
 			this.recorder.record([], true)
@@ -152,9 +152,9 @@ class RecordingHandler implements InteractionHandler, OutputHandler {
 	};
 
 	onRecordingTimerOver() {
-		console.log("Timer is over")
+		//console.log("Timer is over")
 		const t = this.recorder.stop()
-		console.log(t)
+		//console.log(t)
 		turnOffAllOutputs(t, this.recorder.lastModified);
 		removePauseFromEnd(t);
 		if (this.onHasFinished != null)
@@ -206,7 +206,7 @@ export class TactonProcessor {
 		this.modeSwitcher.handler.set(InteractionMode.Recording, this.recordingHandler)
 
 		const output = (i: InstructionToClient[]) => {
-			console.log("Output")
+			//console.log("Output")
 			if (this.onOutput != null)
 				this.onOutput(i)
 		}
@@ -219,7 +219,7 @@ export class TactonProcessor {
 		}
 
 		this.recordingHandler.onHasFinished = (i) => {
-			console.log("Recording fifff")
+			//console.log("Recording fifff")
 			if (this.onRecordingFinished != null) {
 				if (i != null)
 					this.onRecordingFinished(i)
@@ -244,7 +244,7 @@ export class TactonInstructionRecorder {
 	instructions: TactonInstruction[] = [] as TactonInstruction[]
 
 	record(newInstructions: InstructionToClient[], startImmediately: boolean) {
-		console.log("Recording")
+		//console.log("Recording")
 		this.isRecording = true;
 		if (this.instructions.length > 0 || startImmediately) {
 			const timeDiff = new Date().getTime() - this.lastModified
@@ -314,9 +314,9 @@ export class RecordingTimer {
 
 	}
 	stopTimer() {
-		console.log("Stopping the RecordingTimer now!!!")
+		//console.log("Stopping the RecordingTimer now!!!")
 		if (this.intervalHandle != null) {
-			console.log("Stopping timer");
+			//console.log("Stopping timer");
 			clearInterval(this.intervalHandle);
 			this.intervalHandle = null
 			if (this.onTimeOver != null) {
@@ -353,8 +353,8 @@ export const appendCounterToPrefixName = (tactons: Tacton[], prefix: string): st
 	var sorted = names.sort(collator.compare)
 	const highestPrefix = sorted.pop()
 
-	console.log(highestPrefix)
-	console.log(names)
+	//console.log(highestPrefix)
+	//console.log(names)
 	if (highestPrefix != undefined) {
 		const num = highestPrefix.split("-").pop()
 		if (num != undefined) {

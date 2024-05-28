@@ -5,6 +5,7 @@ import { InteractionMode, Room } from "@sharedTypes/roomTypes";
 import { Logger } from "../../util/Logger";
 import { Socket } from "socket.io";
 import { tactonProcessors } from "../tactons/tactons.domain";
+import { getColorForUser } from "../../types/defaultColorUsers";
 
 const RoomsAPI = (socket: Socket) => {
 	Logger.info("Setting up Tacton API for new room connection")
@@ -25,6 +26,7 @@ const RoomsAPI = (socket: Socket) => {
 		socket.leave(req.roomId)
 		await RoomDB.removeUserFromRoom(req.user.id)
 		Logger.info(`Notifying users from room ${req.roomId}`)
+		console.log(req)
 		const u = await RoomDB.getUsersOfRoom(req.roomId)
 		io.to(req.roomId).emit(WS_MSG_TYPE.UPDATE_USER_ACCOUNT_CLI, u);
 	})
@@ -34,7 +36,7 @@ const RoomsAPI = (socket: Socket) => {
 		socket.join(req.id)
 
 		const r = await RoomDB.getRoom(req.id)
-		await RoomDB.assignUserToRoom(req.id, { name: req.userName, id: socket.id, color: "#ec660c", muted: false })
+		await RoomDB.assignUserToRoom(req.id, { name: req.userName, id: socket.id, color: getColorForUser(req.id), muted: false })
 		const tactons = await RoomDB.getTactonsForRoom(req.id)
 		const user = await RoomDB.getUsersOfRoom(req.id)
 		socket.emit(WS_MSG_TYPE.ENTER_ROOM_CLI, {
@@ -46,11 +48,11 @@ const RoomsAPI = (socket: Socket) => {
 		io.to(req.id).emit(WS_MSG_TYPE.UPDATE_USER_ACCOUNT_CLI, user);
 
 		// if (r?.mode == InteractionMode.Playback) {
-			// const tid = tactonProcessors.get(r.id)?.modeSwitcher..tacton?.uuid
-			// if (tid != undefined) {
-			// 	socket.emit(WS_MSG_TYPE.UPDATE_ROOM_MODE_CLI, { roomId: r.id, tactonId: tid, newMode: InteractionMode.Playback })
+		// const tid = tactonProcessors.get(r.id)?.modeSwitcher..tacton?.uuid
+		// if (tid != undefined) {
+		// 	socket.emit(WS_MSG_TYPE.UPDATE_ROOM_MODE_CLI, { roomId: r.id, tactonId: tid, newMode: InteractionMode.Playback })
 
-			// }
+		// }
 		// }
 
 
@@ -72,6 +74,7 @@ const RoomsAPI = (socket: Socket) => {
 	})
 
 	socket.on(WS_MSG_TYPE.CHANGE_ROOMINFO_TACTON_PREFIX_SERV, async (req: { roomId: string, prefix: string }) => {
+		Logger.info(`Setting room prefix for room ${req.roomId} to ${req.prefix}`)
 		await RoomDB.setNamePrefix(req.roomId, req.prefix)
 
 		const r = await RoomDB.getRoom(req.roomId)

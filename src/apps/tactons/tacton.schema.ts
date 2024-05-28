@@ -78,7 +78,7 @@ export const TactonInstructionSchema = new Mongoose.Schema({
 			return JSON.stringify(val)
 		},
 		get: (val: unknown) => {
-			console.log(val)
+			// console.log(val)
 			const x = JSON.parse(val as string)
 			if (isInstructionWait(x as TactonInstruction)) {
 				return x as InstructionWait
@@ -100,7 +100,7 @@ export const TactonSchema = new Mongoose.Schema({
 			return JSON.stringify(val)
 		},
 		get: (val: unknown) => {
-			console.log(val)
+			// console.log(val)
 			const x = JSON.parse(val as string)
 			if (isInstructionWait(x as TactonInstruction)) {
 				return x as InstructionWait

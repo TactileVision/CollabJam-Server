@@ -29,14 +29,14 @@ io.on("connection", (socket) => {
     RoomsAPI(socket);
     TactonsWebsocketAPI(socket);
     socket.on("disconnecting", (reason) => {
-        console.log("Socket.io disconnection!")
+        Logger.warn("Socket.io disconnection!")
     });
 });
 
 initDB().then(async () => {
     server.listen(3333)
     defaultRooms.forEach(room => {
-        console.log(room)
+        Logger.warn(room)
         //TODO Move into a `createRoom` function, so that rooms can be created on the fly
         RoomDB.addRoom(room)
         tactonProcessors.set(room.id, new TactonProcessor())
@@ -49,4 +49,4 @@ initDB().then(async () => {
 }
 ).catch(console.error)
 
-console.log("Server startet at port 3333");
+Logger.warn("Server startet at port 3333");

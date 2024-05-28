@@ -2,6 +2,7 @@ import { InteractionMode, Room, User } from "@sharedTypes/roomTypes";
 import { RoomModel, TactonModel, UserModel } from '../../util/dbaccess'
 import { Logger } from "../../util/Logger";
 import { Tacton } from "@sharedTypes/tactonTypes";
+import { getColorForUser } from "../../types/defaultColorUsers";
 
 
 // RoomModel.watch().on('change', data =>{
@@ -12,7 +13,7 @@ import { Tacton } from "@sharedTypes/tactonTypes";
 const addRoom = async (room: Room) => {
 	const s = await RoomModel.find({ id: room.id })
 	if (s.length == 0) RoomModel.create(room)
-	// else console.log("Room already exists")
+	else Logger.info("Room already exists")
 }
 
 const getRooms = async (): Promise<Room[]> => {
@@ -25,17 +26,21 @@ const getRoom = async (id: string): Promise<Room | undefined> => {
 }
 
 const assignUserToRoom = async (roomId: string, user: User) => {
+	Logger.info(`Assigning user ${user.id} to room`)
+
 	const userExists = await UserModel.find({ id: user.id })
+	Logger.info(userExists)
 	if (userExists.length == 0) {
 		Logger.info(`Adding user ${user.name} (${user.id}) to room ${roomId}`);
-		await UserModel.create({ id: user.id ?? "", name: user.name, color: user.color, roomId: roomId, muted: false })
+		await UserModel.create({ id: user.id ?? "", name: user.name, color: getColorForUser(user.id), roomId: roomId, muted: false })
 	} else if (userExists.length == 1) {
 		Logger.info(`Moving user ${user.name} (${user.id}) to room ${roomId}`);
-		await UserModel.updateOne({ id: user.id, }, { roomId: roomId, name: user.name, color: user.color, muted: false })
+		await UserModel.updateOne({ id: user.id, }, { roomId: roomId, name: user.name, color: getColorForUser(user.id), muted: false })
 	}
 }
 
 const deleteUser = async (userId: string) => {
+	Logger.info("deleting user")
 	await UserModel.deleteOne({ id: userId })
 }
 const removeUserFromRoom = async (userId: string) => {
@@ -44,22 +49,20 @@ const removeUserFromRoom = async (userId: string) => {
 }
 const getUsersOfRoom = async (id: string): Promise<User[]> => {
 	const x = await UserModel.find({ roomId: id })
-	x.forEach(user => delete user.roomId)
+	// x.forEach(user => delete user.roomId)
 	return x
 }
 const getUser = async (id: string): Promise<User> => {
+
 	const user = await UserModel.findOne({ id: id }) as unknown as User
+	Logger.info(`Getting user ${id}`)
+	Logger.info(user)
 	return user
 }
 
 const getTactonsForRoom = async (roomId: string): Promise<Tacton[]> => {
 	const x = await TactonModel.find({ rooms: roomId })
-	console.log(x)
-	x.forEach(t => {
-		console.log(t.instructions)
-	});
 	const y = x as unknown as Tacton[]
-	// x.forEach(tacton => delete tacton.rooms)
 	return y
 }
 const getTacton = async (tactonId: string): Promise<Tacton | null> => {
@@ -73,7 +76,16 @@ const getTacton = async (tactonId: string): Promise<Tacton | null> => {
 	return null
 }
 const setRecordMode = async (roomId: string, recordMode: InteractionMode) => {
-	await RoomModel.updateOne({ id: roomId, mode: recordMode })
+	// Logger.info(`Setting record mode of ${roomId} to ${recordMode}`)
+
+	await RoomModel.updateOne({ id: roomId }, { mode: recordMode })
+	// Logger.info(await RoomModel.find({ id: roomId }))
+	// const rm = await RoomModel.findOne({ id: roomId }, { mode: recordMode })
+	// if (rm != null) {
+	// 	rm.mode = recordMode
+	// 	rm?.save()
+	// }
+	// Logger.info(await RoomModel.find({ id: roomId }))
 }
 
 export {
@@ -91,6 +103,6 @@ export {
 }
 
 export async function setNamePrefix(roomId: string, prefix: string) {
-	await RoomModel.updateOne({ id: roomId, recordingNamePrefix: prefix })
+	await RoomModel.updateOne({ id: roomId }, { recordingNamePrefix: prefix })
 }
 

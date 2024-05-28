@@ -1,5 +1,5 @@
 import { Logger } from "../../util/Logger";
-import { ChangeTactonMetadata, RequestSendTactileInstruction, TactonIdentifier, UpdateTacton, WS_MSG_TYPE } from "@sharedTypes/websocketTypes";
+import { ChangeTactonMetadata, RequestSendTactileInstruction, TactonIdentifier, TactonMove, UpdateTacton, WS_MSG_TYPE } from "@sharedTypes/websocketTypes";
 import { io } from "../../server";
 import { Socket } from "socket.io";
 import { getRoom, } from "../rooms/rooms.data-access";
@@ -7,14 +7,11 @@ import * as Tactons from "./tactons.domain";
 import * as RoomDB from '../rooms/rooms.data-access';
 import { TactonModel } from "../../util/dbaccess";
 import { InteractionMode } from "@sharedTypes/roomTypes";
-import { mergeTactons } from "./merge";
-import { copyFile } from "fs";
-import { ObjectId, UUID } from "mongodb";
-import { isGeneratorFunction } from "util/types";
-import { Tacton, TactonInstruction } from "@sharedTypes/tactonTypes";
-import { Mongoose } from "mongoose";
+import { ObjectId, } from "mongodb";
+import { Tacton, } from "@sharedTypes/tactonTypes";
 import { v4 as uuidv4 } from "uuid";
 import { getIterationForName } from "./tactons.data-access";
+import { MoveOptions } from "fs-extra";
 
 
 export const TactonsWebsocketAPI = (socket: Socket) => {
@@ -45,15 +42,15 @@ export const TactonsWebsocketAPI = (socket: Socket) => {
 		copy.uuid = uuidv4().toString()
 		copy.isNew = true; //<--------------------IMPORTANT
 		if (copy.metadata != undefined && copy.metadata.name != undefined) {
-			const prefix = Tactons.getPrefixFromFilename(copy.metadata.name)
-			const name = Tactons.appendCounterToPrefixName(tactons as unknown as Tacton[], prefix)
-			copy.metadata.name = name
-
+			const iteration = await getIterationForName(copy.metadata.name)
+			// const prefix = Tactons.getPrefixFromFilename(copy.metadata.name)
+			copy.metadata.iteration = iteration
 			copy.save()
 			Logger.info(copy.metadata)
 			io.to(req.roomId).emit(WS_MSG_TYPE.GET_TACTON_CLI, copy as unknown as Tacton)
 		}
 	})
+
 	socket.on(WS_MSG_TYPE.CHANGE_TACTON_METADATA_SERV, async (req: ChangeTactonMetadata) => {
 		Logger.info(`Upadating tacton metadata for ${req.tactonId}`)
 
@@ -65,7 +62,7 @@ export const TactonsWebsocketAPI = (socket: Socket) => {
 			const iteration = await getIterationForName(req.metadata.name)
 			s.metadata = req.metadata
 			s.metadata.iteration = iteration
-			req.metadata.iteration = iteration		
+			req.metadata.iteration = iteration
 			//TODO Deciede and implement a way of renaming
 		}
 
@@ -76,6 +73,7 @@ export const TactonsWebsocketAPI = (socket: Socket) => {
 		//TODO if something went wrong, send back the old metadata alder
 		io.to(req.roomId).emit(WS_MSG_TYPE.CHANGE_TACTON_METADATA_CLI, req)
 	})
+
 	socket.on(WS_MSG_TYPE.UPDATE_TACTON_SERV, async (req: UpdateTacton) => {
 		Logger.info(`Upadating tacton instructions for ${req.tactonId}`)
 		//TODO Think about the merit of storing each change into the mongo db
@@ -83,7 +81,7 @@ export const TactonsWebsocketAPI = (socket: Socket) => {
 		if (tacton == undefined) return
 		console.log(tacton)
 		//TODO 😅
-		
+
 		tacton.instructions = req.tacton.instructions as any
 
 		console.log(req.tacton.instructions)
@@ -110,6 +108,36 @@ export const TactonsWebsocketAPI = (socket: Socket) => {
 				saveTactonAsJson(msg.payload.roomId, session.history[index]);
 				break;
 			} */
+	socket.on(WS_MSG_TYPE.MOVE_TACTON_SERV, async (req: TactonMove) => {
+		//TODO Get tacton from DB
+		Logger.info(`Moving tacton ${req.tacton.tactonId} from ${req.tacton.roomId} to ${req.tacton.tactonId}`)
+		
+		const tactonsInNewRoom = await TactonModel.find({ rooms: req.newRoomId })
+		const tactonToMove = await TactonModel.findOne({ uuid: req.tacton.tactonId })
+		Logger.info(tactonsInNewRoom)
+		Logger.info(tactonToMove)
+		if (tactonToMove == undefined || tactonToMove == null) return
+		
+		if (tactonToMove.metadata == undefined || tactonToMove.metadata == null) return
+		//TODO Check if room exists
+
+		Logger.info(`Moving tacton ${req.tacton.tactonId} from ${req.tacton.roomId} to ${req.tacton.tactonId}`)
+		//TODO Check if room contains a tacton with the same basename, if so prepend original room name to tacton name
+		const isDuplicate = tactonsInNewRoom.find(t => { t.metadata?.name == tactonToMove?.metadata?.name })
+		if (isDuplicate != undefined && tactonToMove.metadata != undefined) {
+			tactonToMove.metadata.name = "foo" + tactonToMove.metadata?.name
+		}
+		//TODO Update current tacton accordingly, this solution only works right now, because we only have one roomid per tacton in the array
+		tactonToMove.rooms.pop()
+		tactonToMove.rooms.push(req.newRoomId)
+
+		const t = await tactonToMove.save()
+
+		io.to(req.tacton.roomId).emit(WS_MSG_TYPE.DELETE_TACTON_CLI, { delted: true, tacton: req.tacton })
+		io.to(req.newRoomId).emit(WS_MSG_TYPE.GET_TACTON_CLI, tactonToMove as unknown as Tacton)
+		//TODO SEND delete message to old room
+		//TODO SEND add message to new room
+	})
 }
 
 export const TactonProcessorCallbackBindings = (p: Tactons.TactonProcessor, roomId: string) => {

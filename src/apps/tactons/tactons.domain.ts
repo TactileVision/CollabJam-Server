@@ -6,10 +6,6 @@ import { v4 as uuidv4 } from "uuid";
 import { removePauseFromEnd, turnOffAllOutputs } from "../../util/tacton";
 import { TactonPlayer } from "./tactonplayer";
 import { getTacton } from "../rooms/rooms.data-access";
-import { mergeTactons } from "./merge";
-import exp = require("constants");
-import { InstructionSetParameterSchema } from "./tacton.schema";
-import { info } from "console";
 export interface TactonProcessingRules {
 	allowInputOnPlayback: boolean,
 	startRecordingOn: "firstInput" | "immediate",
@@ -331,12 +327,13 @@ export class RecordingTimer {
 }
 
 
-export const assembleTacton = (instructions: TactonInstruction[], name: string): Tacton => {
+export const assembleTacton = (instructions: TactonInstruction[], name: string, iteration: number): Tacton => {
 	return {
 		uuid: uuidv4().toString(),
 		instructions: instructions,
 		metadata: {
 			name: name,
+			iteration: iteration,
 			favorite: false,
 			bodyTags: [],
 			customTags: [],

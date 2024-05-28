@@ -31,6 +31,7 @@ export class TactonRecording {
             uuid: this.uuid,
             metadata: {
                 name: this.name,
+                iteration: 0,
                 favorite: this.favorite,
                 recordDate: this.recordDate == undefined ? new Date() : this.recordDate,
                 description: "",

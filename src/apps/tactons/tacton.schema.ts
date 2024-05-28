@@ -8,6 +8,11 @@ export const TactonMetadataSchema = new Mongoose.Schema({
 		required: false,
 		default: "unnamed"
 	},
+	iteration: {
+		type: Number,
+		required: false,
+		default: 0
+	},
 	favorite: {
 		type: Boolean,
 		required: true,

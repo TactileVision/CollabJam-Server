@@ -14,6 +14,7 @@ import { isGeneratorFunction } from "util/types";
 import { Tacton, TactonInstruction } from "@sharedTypes/tactonTypes";
 import { Mongoose } from "mongoose";
 import { v4 as uuidv4 } from "uuid";
+import { getIterationForName } from "./tactons.data-access";
 
 
 export const TactonsWebsocketAPI = (socket: Socket) => {
@@ -59,10 +60,14 @@ export const TactonsWebsocketAPI = (socket: Socket) => {
 		const s = await TactonModel.findOne({ uuid: req.tactonId })
 		if (s == undefined) return
 
+		//Update name and iteration based on that name in both structs
 		if (s.metadata?.name != req.metadata.name) {
+			const iteration = await getIterationForName(req.metadata.name)
+			s.metadata = req.metadata
+			s.metadata.iteration = iteration
+			req.metadata.iteration = iteration		
 			//TODO Deciede and implement a way of renaming
 		}
-		s.metadata = req.metadata
 
 		const save = await s.save()
 		console.log(s)
@@ -127,9 +132,10 @@ export const TactonProcessorCallbackBindings = (p: Tactons.TactonProcessor, room
 			prefix = r.recordingNamePrefix
 		}
 
-		const tactons = await RoomDB.getTactonsForRoom(roomId)
-		const name = Tactons.appendCounterToPrefixName(tactons, prefix)
-		const newTacton = Tactons.assembleTacton(recordedInstructions, name)
+		// const tactons = await RoomDB.getTactonsForRoom(roomId)
+		// const name = Tactons.appendCounterToPrefixName(tactons, prefix)
+		const iteration = await getIterationForName(prefix)
+		const newTacton = Tactons.assembleTacton(recordedInstructions, prefix, iteration)
 		io.to(roomId).emit(WS_MSG_TYPE.GET_TACTON_CLI, newTacton)
 		const ts = newTacton as any
 		ts.rooms = [roomId]

@@ -31,7 +31,7 @@ const assignUserToRoom = async (roomId: string, user: User) => {
 		await UserModel.create({ id: user.id ?? "", name: user.name, color: user.color, roomId: roomId, muted: false })
 	} else if (userExists.length == 1) {
 		Logger.info(`Moving user ${user.name} (${user.id}) to room ${roomId}`);
-		await UserModel.updateOne({ id: user.id, }, { roomId: roomId })
+		await UserModel.updateOne({ id: user.id, }, { roomId: roomId, name: user.name, color: user.color, muted: false })
 	}
 }
 

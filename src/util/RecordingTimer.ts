@@ -38,7 +38,6 @@ export class RecordingTimer {
         });
     }
     start() {
-        console.log("Starting recording timer");
         if (this.intervalHandle == null) {
             this.intervalHandle = setInterval(() => { this.loop() }, this.interval);
         } else {

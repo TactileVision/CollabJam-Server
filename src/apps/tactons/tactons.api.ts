@@ -111,13 +111,13 @@ export const TactonsWebsocketAPI = (socket: Socket) => {
 	socket.on(WS_MSG_TYPE.MOVE_TACTON_SERV, async (req: TactonMove) => {
 		//TODO Get tacton from DB
 		Logger.info(`Moving tacton ${req.tacton.tactonId} from ${req.tacton.roomId} to ${req.tacton.tactonId}`)
-		
+
 		const tactonsInNewRoom = await TactonModel.find({ rooms: req.newRoomId })
 		const tactonToMove = await TactonModel.findOne({ uuid: req.tacton.tactonId })
 		Logger.info(tactonsInNewRoom)
 		Logger.info(tactonToMove)
 		if (tactonToMove == undefined || tactonToMove == null) return
-		
+
 		if (tactonToMove.metadata == undefined || tactonToMove.metadata == null) return
 		//TODO Check if room exists
 
@@ -147,44 +147,25 @@ export const TactonProcessorCallbackBindings = (p: Tactons.TactonProcessor, room
 		io.to(roomId).emit(WS_MSG_TYPE.SEND_INSTRUCTION_CLI, i);
 	}
 	p.onNewInteractionMode = async (mode) => {
-		// Logger.info("Switching interaction modes")
-		// Logger.info(mode)
 		io.to(roomId).emit(WS_MSG_TYPE.UPDATE_ROOM_MODE_CLI, mode)
 		await RoomDB.setRecordMode(mode.roomId, mode.newMode)
 	}
 
 	p.onRecordingFinished = async (recordedInstructions) => {
-		// Logger.info("Recording is finished")
-
-		// console.log(recordedInstructions)
+		Logger.info("PROCESSOR RECORDING FINISHED")
 		const r = await getRoom(roomId)
 		let prefix = "unnamed"
 		if (r != undefined) {
 			prefix = r.recordingNamePrefix
 		}
 
-		// const tactons = await RoomDB.getTactonsForRoom(roomId)
-		// const name = Tactons.appendCounterToPrefixName(tactons, prefix)
 		const iteration = await getIterationForName(prefix)
 		const newTacton = Tactons.assembleTacton(recordedInstructions, prefix, iteration)
 		io.to(roomId).emit(WS_MSG_TYPE.GET_TACTON_CLI, newTacton)
 		const ts = newTacton as any
 		ts.rooms = [roomId]
 		TactonModel.create(ts)
-
-		//TactonModel.add(roomId, t)
-
-		/*TactonMetadata {
-					name: string = prefix + counter
-					favorite: boolean = false
-					recordDate: Date = getDateFromRecorder/Timer
-					description: string = ""
-					customTags: string[] = []
-					bodyTags: string[] = []
-		} */
-		//TODO Load metadata from room to populate metadata aspect of tacton etc
-		//TODO Store loaded tacton in database
-		//TODO Send tacton to clients in room
+		p.inputInteractionMode(InteractionMode.Recording, { newMode: InteractionMode.Jamming, roomId: roomId, tactonId: ts.uuid })
 	}
 
 	p.onPlaybackFinished = async () => {
@@ -194,4 +175,19 @@ export const TactonProcessorCallbackBindings = (p: Tactons.TactonProcessor, room
 		io.to(roomId).emit(WS_MSG_TYPE.UPDATE_ROOM_MODE_CLI, { newMode: InteractionMode.Jamming, roomId: roomId, tactonId: undefined })
 	}
 
+	p.onOverdubbingFinished = async (tactonId, overdubbedInstructions) => {
+		RoomDB.setRecordMode(roomId, InteractionMode.Jamming)
+		await TactonModel.updateOne({ uuid: tactonId, }, { instructions: overdubbedInstructions, 'metadata.date': new Date() })
+		const t = await TactonModel.findOne({ uuid: tactonId })
+
+		if (t != undefined && t != null) {
+			io.to(roomId).emit(WS_MSG_TYPE.UPDATE_TACTON_CLI, { roomId: roomId, tactonId: tactonId, tacton: t as unknown as Tacton })
+			io.to(roomId).emit(WS_MSG_TYPE.UPDATE_ROOM_MODE_CLI, { newMode: InteractionMode.Jamming, roomId: roomId, tactonId: undefined })
+		} else {
+			Logger.error(`Tacton ${tactonId} does not exist`)
+			//TODO Store as a new tacton
+		}
+		p.inputInteractionMode(InteractionMode.Overdubbing, { newMode: InteractionMode.Jamming, roomId: roomId, tactonId: tactonId })
+
+	}
 }

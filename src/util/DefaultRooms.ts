@@ -76,7 +76,7 @@ export const defaultRooms: Room[] = [
 		participants: [],
 		description: "",
 		id: "105d1f69-bd3f-49f5-9615-cf7e8209e929",
-		maxDurationRecord: 20000,
+		maxDurationRecord: 10000,
 		mode: InteractionMode.Jamming,
 		name: "Demo 1",
 		recordingNamePrefix: "demo_1"
@@ -86,7 +86,7 @@ export const defaultRooms: Room[] = [
 		participants: [],
 		description: "",
 		id: "4ec34f34-97f9-44b5-bc53-1a321a2288ee",
-		maxDurationRecord: 20000,
+		maxDurationRecord: 10000,
 		mode: InteractionMode.Jamming,
 		name: "Demo 2",
 		recordingNamePrefix: "demo_2"

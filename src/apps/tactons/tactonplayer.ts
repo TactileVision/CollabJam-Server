@@ -14,7 +14,7 @@ export class TactonPlayer {
 		this.advance()
 	}
 
-	stop(isForced: boolean) {
+	stop() {
 		// if (isForced) {
 
 		// 	if (this.onTactonPlayerStopped != null) {
@@ -45,7 +45,7 @@ export class TactonPlayer {
 		if (this.index == this.tacton.instructions.length) {
 			Logger.debug("[TactonPlayer] Done");
 			this.instructionTimer = null;
-			this.stop(false)
+			this.stop()
 			return;
 		}
 

@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from "uuid";
-import { isWellFormed, processTactonInstructions } from "../util/tacton";
+import { isWellFormed, processTactonInstructions } from "../apps/tactons/logic/util/tacton";
 import { TactileTask, Tacton, TactonInstruction, impl } from "@sharedTypes/tactonTypes";
 
 

@@ -1,5 +1,5 @@
 import { InstructionSetParameter, InstructionToClient, InstructionWait, Tacton, TactonInstruction, isInstructionSetParameter, isInstructionWait } from "@sharedTypes/tactonTypes";
-import { Logger } from "../../util/Logger";
+import { Logger } from "../../../../util/Logger";
 export class TactonPlayer {
 	instructionTimer: NodeJS.Timeout | null = null
 	index: number = 0

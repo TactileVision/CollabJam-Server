@@ -3,7 +3,7 @@ import { ChangeTactonMetadata, RequestSendTactileInstruction, TactonIdentifier, 
 import { io } from "../../server";
 import { Socket } from "socket.io";
 import { getRoom, } from "../rooms/rooms.data-access";
-import * as Tactons from "./tactons.domain";
+import { TactonProcessor, tactonProcessors } from "./logic/tactons.domain";
 import * as RoomDB from '../rooms/rooms.data-access';
 import { TactonModel } from "../../util/dbaccess";
 import { InteractionMode } from "@sharedTypes/roomTypes";
@@ -11,13 +11,14 @@ import { ObjectId, } from "mongodb";
 import { Tacton, } from "@sharedTypes/tactonTypes";
 import { v4 as uuidv4 } from "uuid";
 import { getIterationForName } from "./tactons.data-access";
-import { MoveOptions } from "fs-extra";
+
+import { assembleTacton } from "./logic/util/assemble";
 
 
 export const TactonsWebsocketAPI = (socket: Socket) => {
 	Logger.info("Setting up Tacton API for new socket connection")
 	socket.on(WS_MSG_TYPE.SEND_INSTRUCTION_SERV, (req: RequestSendTactileInstruction) => {
-		Tactons.tactonProcessors.get(req.roomId)?.inputInstruction(req.instructions)
+		tactonProcessors.get(req.roomId)?.inputInstruction(req.instructions)
 
 	})
 	socket.on(WS_MSG_TYPE.DELETE_TACTON_SERV, async (req: TactonIdentifier) => {
@@ -140,7 +141,7 @@ export const TactonsWebsocketAPI = (socket: Socket) => {
 	})
 }
 
-export const TactonProcessorCallbackBindings = (p: Tactons.TactonProcessor, roomId: string) => {
+export const TactonProcessorCallbackBindings = (p: TactonProcessor, roomId: string) => {
 
 	p.onOutput = (i) => {
 		// console.log(i)
@@ -160,7 +161,7 @@ export const TactonProcessorCallbackBindings = (p: Tactons.TactonProcessor, room
 		}
 
 		const iteration = await getIterationForName(prefix)
-		const newTacton = Tactons.assembleTacton(recordedInstructions, prefix, iteration)
+		const newTacton = assembleTacton(recordedInstructions, prefix, iteration)
 		io.to(roomId).emit(WS_MSG_TYPE.GET_TACTON_CLI, newTacton)
 		const ts = newTacton as any
 		ts.rooms = [roomId]

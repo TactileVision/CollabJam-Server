@@ -7,9 +7,8 @@ import { Server } from "socket.io";
 import { ClientToServerEvents, ServerToClientEvents,  } from '@sharedTypes/websocketTypes';
 import { Logger } from "./util/Logger";
 import { TactonProcessorCallbackBindings, TactonsWebsocketAPI } from './apps/tactons/tactons.api';
-import { TactonProcessor, tactonProcessors } from './apps/tactons/tactons.domain';
+import { TactonProcessor, tactonProcessors } from './apps/tactons/logic/tactons.domain';
 
-var uuid = require('uuid');
 const server = createServer();
 
 

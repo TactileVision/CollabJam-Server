@@ -1,10 +1,10 @@
 import { RequestEnterRoom, RequestUpdateUser, UpdateRoomMode, WS_MSG_TYPE } from "@sharedTypes/websocketTypes";
 import { io } from "../../server";
 import * as RoomDB from './rooms.data-access'
-import { InteractionMode, Room } from "@sharedTypes/roomTypes";
+import {  Room } from "@sharedTypes/roomTypes";
 import { Logger } from "../../util/Logger";
 import { Socket } from "socket.io";
-import { tactonProcessors } from "../tactons/tactons.domain";
+import { tactonProcessors } from "../tactons/logic/tactons.domain";
 import { getColorForUser } from "../../types/defaultColorUsers";
 
 const RoomsAPI = (socket: Socket) => {

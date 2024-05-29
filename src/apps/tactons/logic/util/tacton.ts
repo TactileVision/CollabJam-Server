@@ -1,5 +1,5 @@
 import { Tacton, isInstructionSetParameter, InstructionSetParameter, isInstructionWait, InstructionWait, TactonInstruction } from "@sharedTypes/tactonTypes";
-import { TactonRecordingSession } from "../types";
+import { TactonRecordingSession } from "../../../../types";
 
 
 

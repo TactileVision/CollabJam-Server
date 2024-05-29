@@ -4,7 +4,7 @@ import RoomModule from "./RoomModule";
 import TactonModule from "./TactonModule";
 import UserModule from "./UserModule";
 import { RecordingTimer } from "../util/RecordingTimer";
-import { setName } from "../util/tacton";
+import { setName } from "../apps/tactons/logic/util/tacton";
 import { saveTactonAsJson } from "../util/FileStorage";
 import { Room, User, InteractionMode } from "@sharedTypes/roomTypes";
 import { Tacton, InstructionToClient } from "@sharedTypes/tactonTypes";

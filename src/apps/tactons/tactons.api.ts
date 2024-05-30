@@ -61,13 +61,9 @@ export const TactonsWebsocketAPI = (socket: Socket) => {
 		//Update name and iteration based on that name in both structs
 		if (s.metadata?.name != req.metadata.name) {
 			const iteration = await getIterationForName(req.metadata.name)
-			s.metadata = req.metadata
-			s.metadata.iteration = iteration
 			req.metadata.iteration = iteration
-			//TODO Deciede and implement a way of renaming
 		}
-
-		const save = await s.save()
+		await TactonModel.updateOne({ uuid: req.tactonId }, { metadata: req.metadata })
 		// console.log(s)
 		// console.log(save)
 

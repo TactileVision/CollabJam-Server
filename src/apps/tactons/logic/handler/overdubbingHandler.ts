@@ -33,7 +33,10 @@ export class OverdubbingHandler implements InteractionHandler, OutputHandler {
 	}
 
 	onInstructions(instructions: InstructionToClient[]) {
-		//TODO Stor for each channel the current playback value and return to that value if the instructions contain a 0 amlitude value
+		//TODO Store for each channel the current playback value and return to that value if the instructions contain a 0 amlitude value
+		/*
+				*/
+
 		this.recordHandler.onInstructions(instructions)
 		// if (this.onOutput != null)
 		// 	this.onOutput(instructions)
@@ -69,13 +72,44 @@ export class OverdubbingHandler implements InteractionHandler, OutputHandler {
 		}
 		this.recordHandler.onOutput = (i) => {
 			//TODO look at packages and insert playback stored state if needed
-			// i.forEach(inst => {
-			// 	inst.channels.forEach(channel => {
-					
-			// 	});
-			// })
+
+			// Get the most recent amplitude for each channel
+			const amps: number[] = []
+			i.forEach(inst => {
+				inst.channels.forEach(channel => {
+					amps[channel] = inst.intensity
+				});
+			})
+
+			// go through each amplitude and replace 0 with playback value
+			amps.forEach((value, index, array) => {
+				if (value == 0) {
+					//replace 0 with playback value
+					array[index] = this.playbackChannelState[index]
+				}
+			})
+			const instructionMap = new Map<number, InstructionToClient>()
+			amps.forEach((amp, index, array) => {
+				const inst = instructionMap.get(amp)
+				if (inst == undefined) {
+					instructionMap.set(amp, {
+						author: i[0].author,
+						channels: [index],
+						intensity: amp,
+						keyId: ""
+					})
+				} else {
+					inst.channels.push(index)
+				}
+
+			})
+			const im: InstructionToClient[] = []
+			instructionMap.forEach(i => {
+				im.push(i)
+			})
+			console.log(im)
 			if (this.onOutput != null)
-				this.onOutput(i)
+				this.onOutput(im)
 		}
 		this.playbackHandler.onOutput = (i) => {
 			//TODO Grab output from playback handler to 
@@ -86,8 +120,8 @@ export class OverdubbingHandler implements InteractionHandler, OutputHandler {
 			})
 			console.log(this.playbackChannelState)
 			Logger.info(`--${i.length}--`)
-			// if (this.onOutput != null)
-			// 	this.onOutput(i)
+			if (this.onOutput != null)
+				this.onOutput(i)
 		}
 	}
 }

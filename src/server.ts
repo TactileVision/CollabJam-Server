@@ -4,7 +4,7 @@ import { initDB } from './util/dbaccess'
 import * as RoomDB from './apps/rooms/rooms.data-access'
 import { RoomsAPI } from './apps/rooms/rooms.api';
 import { Server } from "socket.io";
-import { ClientToServerEvents, ServerToClientEvents,  } from '@sharedTypes/websocketTypes';
+import { ClientToServerEvents, ServerToClientEvents, } from '@sharedTypes/websocketTypes';
 import { Logger } from "./util/Logger";
 import { TactonProcessorCallbackBindings, TactonsWebsocketAPI } from './apps/tactons/tactons.api';
 import { TactonProcessor, tactonProcessors } from './apps/tactons/logic/tactons.domain';
@@ -17,7 +17,7 @@ export const io = new Server<
     ClientToServerEvents,
     ServerToClientEvents
 >(server, {
-	path: "/whws/",
+    path: "/whws/",
     cors: {
         origin: true
     }
@@ -44,6 +44,7 @@ initDB().then(async () => {
             TactonProcessorCallbackBindings(p, room.id)
         }
     })
+    RoomDB.addCustomTags([])
 
 }
 ).catch(console.error)

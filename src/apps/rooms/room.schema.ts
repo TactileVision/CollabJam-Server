@@ -34,6 +34,19 @@ export const UserSchema = new Mongoose.Schema({
 })
 
 
+export const TagSchema = new Mongoose.Schema({
+	id: {
+		type: String,
+		required: true,
+		default:""
+	},
+	customTags: {
+		required: true,
+		type: [String],
+		default: [],
+	}
+})
+
 //Check out  "@sharedTypes/roomTypes"
 export const RoomSchema = new Mongoose.Schema({
 	id: {

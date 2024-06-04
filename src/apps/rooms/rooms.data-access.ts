@@ -1,5 +1,5 @@
 import { InteractionMode, Room, User } from "@sharedTypes/roomTypes";
-import { RoomModel, TactonModel, UserModel } from '../../util/dbaccess'
+import { RoomModel, TactonModel, TagModel, UserModel } from '../../util/dbaccess'
 import { Logger } from "../../util/Logger";
 import { Tacton } from "@sharedTypes/tactonTypes";
 import { getColorForUser } from "../../types/defaultColorUsers";
@@ -76,16 +76,37 @@ const getTacton = async (tactonId: string): Promise<Tacton | null> => {
 	return null
 }
 const setRecordMode = async (roomId: string, recordMode: InteractionMode) => {
-	// Logger.info(`Setting record mode of ${roomId} to ${recordMode}`)
-
 	await RoomModel.updateOne({ id: roomId }, { mode: recordMode })
-	// Logger.info(await RoomModel.find({ id: roomId }))
-	// const rm = await RoomModel.findOne({ id: roomId }, { mode: recordMode })
-	// if (rm != null) {
-	// 	rm.mode = recordMode
-	// 	rm?.save()
-	// }
-	// Logger.info(await RoomModel.find({ id: roomId }))
+}
+
+const addCustomTags = async (tags: string[]): Promise<boolean> => {
+	const t = await TagModel.findOne({ id: 1 })
+	if (t == undefined) {
+		Logger.info("Creating custom tag array")
+		await TagModel.create({ id: 1, customTags: tags })
+		await TagModel.updateOne({ id: 1 }, { customTags: tags })
+		return true
+	} else {
+		let update: boolean = false
+		Logger.info("Custom Tags already exist in database, updating with specified tags ")
+		//Only add new tags-strings to the array
+		tags.forEach(tag => {
+			if (t.customTags.findIndex(x => { return x == tag }) == -1) {
+				t.customTags.push(tag)
+				update = true
+			}
+		})
+		await t.save()
+		return update
+	}
+}
+const getCustomTags = async (): Promise<String[]> => {
+	const t = await TagModel.findOne({ id: 1 })
+	return t?.customTags || []
+}
+
+export async function setNamePrefix(roomId: string, prefix: string) {
+	await RoomModel.updateOne({ id: roomId }, { recordingNamePrefix: prefix })
 }
 
 export {
@@ -99,10 +120,10 @@ export {
 	getUser,
 	deleteUser,
 	getTactonsForRoom,
-	getTacton
+	getTacton,
+	addCustomTags,
+	getCustomTags
 }
 
-export async function setNamePrefix(roomId: string, prefix: string) {
-	await RoomModel.updateOne({ id: roomId }, { recordingNamePrefix: prefix })
-}
+
 

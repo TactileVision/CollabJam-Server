@@ -98,7 +98,7 @@ export const defaultRooms: Room[] = [
 		id: "4ec34f34-97f9-44b5-bc53-1a321aaaaa11",
 		maxDurationRecord: 10000,
 		mode: InteractionMode.Jamming,
-		name: "Team 1",
+		name: "Team_1",
 		recordingNamePrefix: "team_1"
 	},
 	{
@@ -108,8 +108,8 @@ export const defaultRooms: Room[] = [
 		id: "4ec34f34-97f9-44b5-bc53-1a321aaaaa12",
 		maxDurationRecord: 10000,
 		mode: InteractionMode.Jamming,
-		name: "T1_P1",
-		recordingNamePrefix: "T1_P1"
+		name: "Team_1-P_1",
+		recordingNamePrefix: "team_1-p_1"
 	},
 	{
 		currentRecordingTime: 0,
@@ -118,8 +118,8 @@ export const defaultRooms: Room[] = [
 		id: "4ec34f34-97f9-44b5-bc53-1a321aaaaa13",
 		maxDurationRecord: 10000,
 		mode: InteractionMode.Jamming,
-		name: "T1_P2",
-		recordingNamePrefix: "T1_P2"
+		name: "Team_1-P_2",
+		recordingNamePrefix: "team_1-p_2"
 	},
 	{
 		currentRecordingTime: 0,
@@ -128,7 +128,7 @@ export const defaultRooms: Room[] = [
 		id: "4ec34f34-97f9-44b5-bc53-1a321aaaaa21",
 		maxDurationRecord: 10000,
 		mode: InteractionMode.Jamming,
-		name: "Team 2",
+		name: "Team_2",
 		recordingNamePrefix: "team_2"
 	},
 	{
@@ -138,8 +138,8 @@ export const defaultRooms: Room[] = [
 		id: "4ec34f34-97f9-44b5-bc53-1a321aaaaa22",
 		maxDurationRecord: 10000,
 		mode: InteractionMode.Jamming,
-		name: "T2_P1",
-		recordingNamePrefix: "T2_P1"
+		name: "Team_2-P_1",
+		recordingNamePrefix: "team_2-p_1"
 	},
 	{
 		currentRecordingTime: 0,
@@ -148,8 +148,8 @@ export const defaultRooms: Room[] = [
 		id: "4ec34f34-97f9-44b5-bc53-1a321aaaaa23",
 		maxDurationRecord: 10000,
 		mode: InteractionMode.Jamming,
-		name: "T2_P2",
-		recordingNamePrefix: "T2_P2"
+		name: "Team_2-P_2",
+		recordingNamePrefix: "team_2-p_2"
 	},
 	{
 		currentRecordingTime: 0,
@@ -158,7 +158,7 @@ export const defaultRooms: Room[] = [
 		id: "4ec34f34-97f9-44b5-bc53-1a321aaaaa31",
 		maxDurationRecord: 10000,
 		mode: InteractionMode.Jamming,
-		name: "Team 3",
+		name: "Team_3",
 		recordingNamePrefix: "team_3"
 	},
 	{
@@ -168,8 +168,8 @@ export const defaultRooms: Room[] = [
 		id: "4ec34f34-97f9-44b5-bc53-1a321aaaaa32",
 		maxDurationRecord: 10000,
 		mode: InteractionMode.Jamming,
-		name: "T3_P1",
-		recordingNamePrefix: "T3_P1"
+		name: "Team_3-P_1",
+		recordingNamePrefix: "team_3-p_1"
 	},
 	{
 		currentRecordingTime: 0,
@@ -178,8 +178,8 @@ export const defaultRooms: Room[] = [
 		id: "4ec34f34-97f9-44b5-bc53-1a321aaaaa33",
 		maxDurationRecord: 10000,
 		mode: InteractionMode.Jamming,
-		name: "T3_P2",
-		recordingNamePrefix: "T3_P2"
+		name: "Team_3-P_2",
+		recordingNamePrefix: "team_3-p_2"
 	},
 	{
 		currentRecordingTime: 0,
@@ -188,7 +188,7 @@ export const defaultRooms: Room[] = [
 		id: "4ec34f34-97f9-44b5-bc53-1a321aaaaa41",
 		maxDurationRecord: 10000,
 		mode: InteractionMode.Jamming,
-		name: "Team 4",
+		name: "Team_4",
 		recordingNamePrefix: "team_4"
 	},
 	{
@@ -198,8 +198,8 @@ export const defaultRooms: Room[] = [
 		id: "4ec34f34-97f9-44b5-bc53-1a321aaaaa42",
 		maxDurationRecord: 10000,
 		mode: InteractionMode.Jamming,
-		name: "T4_P1",
-		recordingNamePrefix: "T4_P1"
+		name: "Team_4-P_1",
+		recordingNamePrefix: "team_4-p_1"
 	},
 	{
 		currentRecordingTime: 0,
@@ -208,8 +208,8 @@ export const defaultRooms: Room[] = [
 		id: "4ec34f34-97f9-44b5-bc53-1a321aaaaa43",
 		maxDurationRecord: 10000,
 		mode: InteractionMode.Jamming,
-		name: "T4_P2",
-		recordingNamePrefix: "T4_P2"
+		name: "Team_4-P_2",
+		recordingNamePrefix: "team_4-p_2"
 	},
 	{
 		currentRecordingTime: 0,
@@ -218,7 +218,7 @@ export const defaultRooms: Room[] = [
 		id: "4ec34f34-97f9-44b5-bc53-1a321aaaaa51",
 		maxDurationRecord: 10000,
 		mode: InteractionMode.Jamming,
-		name: "Team 5",
+		name: "Team_5",
 		recordingNamePrefix: "team_5"
 	},
 	{
@@ -228,8 +228,8 @@ export const defaultRooms: Room[] = [
 		id: "4ec34f34-97f9-44b5-bc53-1a321aaaaa52",
 		maxDurationRecord: 10000,
 		mode: InteractionMode.Jamming,
-		name: "T5_P1",
-		recordingNamePrefix: "T5_P1"
+		name: "Team_5-P_1",
+		recordingNamePrefix: "team_5-p_1"
 	},
 	{
 		currentRecordingTime: 0,
@@ -238,7 +238,7 @@ export const defaultRooms: Room[] = [
 		id: "4ec34f34-97f9-44b5-bc53-1a321aaaaa53",
 		maxDurationRecord: 10000,
 		mode: InteractionMode.Jamming,
-		name: "T5_P2",
-		recordingNamePrefix: "T5_P2"
+		name: "Team_5-P_2",
+		recordingNamePrefix: "team_5-p_2"
 	},
 ]

@@ -50,7 +50,6 @@ export class TactonProcessor {
 		this.modeSwitcher.currentHandler = this.jammingHandler
 
 		const output = (i: InstructionToClient[]) => {
-			console.log("Output")
 			if (this.onOutput != null)
 				this.onOutput(i)
 		}

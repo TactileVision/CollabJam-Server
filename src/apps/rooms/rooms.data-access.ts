@@ -3,6 +3,7 @@ import { RoomModel, TactonModel, TagModel, UserModel } from '../../util/dbaccess
 import { Logger } from "../../util/Logger";
 import { Tacton } from "@sharedTypes/tactonTypes";
 import { getColorForUser } from "../../types/defaultColorUsers";
+import { roomFilter } from "../../util/FilterRooms";
 
 
 // RoomModel.watch().on('change', data =>{
@@ -17,7 +18,15 @@ const addRoom = async (room: Room) => {
 }
 
 const getRooms = async (): Promise<Room[]> => {
-	return await RoomModel.find({})
+	if (!roomFilter.isActive) {
+		return await RoomModel.find()
+	} else {
+		return await RoomModel.find({
+			id: {
+				$in: roomFilter.roomsToShow
+			}
+		})
+	}
 }
 
 const getRoom = async (id: string): Promise<Room | undefined> => {

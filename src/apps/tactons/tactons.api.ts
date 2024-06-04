@@ -5,6 +5,7 @@ import { Socket } from "socket.io";
 import { getRoom, } from "../rooms/rooms.data-access";
 import { TactonProcessor, tactonProcessors } from "./logic/tactons.domain";
 import * as RoomDB from '../rooms/rooms.data-access';
+import * as TagsDB from '../tags/tags.data-access';
 import { TactonModel, TagModel } from "../../util/dbaccess";
 import { InteractionMode } from "@sharedTypes/roomTypes";
 import { ObjectId, } from "mongodb";
@@ -69,11 +70,11 @@ export const TactonsWebsocketAPI = (socket: Socket) => {
 
 		//TODO if something went wrong, send back the old metadata alder
 		io.to(req.roomId).emit(WS_MSG_TYPE.CHANGE_TACTON_METADATA_CLI, req)
-		const didUpdate = await RoomDB.addCustomTags(req.metadata.customTags)
+		const didUpdate = await TagsDB.addCustomTags(req.metadata.customTags)
 		if (didUpdate) {
 			const tags = await TagModel.findOne({})
 			if (tags != undefined) {
-				io.emit(WS_MSG_TYPE.UPDATE_AVAILABLE_TAGS_CLI, { customTags: tags.customTags })
+				io.emit(WS_MSG_TYPE.UPDATE_AVAILABLE_TAGS_CLI, { customTags: tags.customTags, bodyTags: undefined })
 			}
 		}
 

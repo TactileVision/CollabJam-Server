@@ -2,12 +2,14 @@ import { createServer, IncomingMessage } from 'http';
 import { defaultRooms } from './util/DefaultRooms';
 import { initDB } from './util/dbaccess'
 import * as RoomDB from './apps/rooms/rooms.data-access'
+import * as TagsDB from './apps/tags/tags.data-access'
 import { RoomsAPI } from './apps/rooms/rooms.api';
 import { Server } from "socket.io";
 import { ClientToServerEvents, ServerToClientEvents, } from '@sharedTypes/websocketTypes';
 import { Logger } from "./util/Logger";
 import { TactonProcessorCallbackBindings, TactonsWebsocketAPI } from './apps/tactons/tactons.api';
 import { TactonProcessor, tactonProcessors } from './apps/tactons/logic/tactons.domain';
+import { defaultBodyTags, defaultCustomTags } from './util/DefaultTags';
 
 const server = createServer();
 
@@ -44,7 +46,7 @@ initDB().then(async () => {
             TactonProcessorCallbackBindings(p, room.id)
         }
     })
-    RoomDB.addCustomTags([])
+    TagsDB.initTags(defaultBodyTags, defaultCustomTags)
 
 }
 ).catch(console.error)

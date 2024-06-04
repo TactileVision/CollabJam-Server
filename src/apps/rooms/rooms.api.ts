@@ -1,6 +1,7 @@
 import { RequestEnterRoom, RequestUpdateUser, UpdateRoomMode, WS_MSG_TYPE } from "@sharedTypes/websocketTypes";
 import { io } from "../../server";
 import * as RoomDB from './rooms.data-access'
+import * as TagsDB from '../tags/tags.data-access'
 import {  Room } from "@sharedTypes/roomTypes";
 import { Logger } from "../../util/Logger";
 import { Socket } from "socket.io";
@@ -47,7 +48,7 @@ const RoomsAPI = (socket: Socket) => {
 		})
 		io.to(req.id).emit(WS_MSG_TYPE.UPDATE_USER_ACCOUNT_CLI, user);
 
-		socket.emit(WS_MSG_TYPE.UPDATE_AVAILABLE_TAGS_CLI, {customTags: await RoomDB.getCustomTags() })
+		socket.emit(WS_MSG_TYPE.UPDATE_AVAILABLE_TAGS_CLI, {customTags: await TagsDB.getCustomTags(), bodyTags: await TagsDB.getBodyTags() })
 	})
 
 	socket.on(WS_MSG_TYPE.UPDATE_ROOM_MODE_SERV, async (req: UpdateRoomMode) => {

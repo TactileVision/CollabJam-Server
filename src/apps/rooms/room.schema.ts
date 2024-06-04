@@ -40,6 +40,11 @@ export const TagSchema = new Mongoose.Schema({
 		required: true,
 		default:""
 	},
+	bodyTags: {
+		require: true,
+		type: [String],
+		default: []
+	},
 	customTags: {
 		required: true,
 		type: [String],
@@ -53,7 +58,6 @@ export const RoomSchema = new Mongoose.Schema({
 		type: String,
 		required: true,
 		default: ""
-		// _id: true
 	}, name: String,
 	description: String,
 	recordingNamePrefix: String,

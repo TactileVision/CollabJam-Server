@@ -49,6 +49,11 @@ export const TagSchema = new Mongoose.Schema({
 		required: true,
 		type: [String],
 		default: [],
+	},
+	promptTags: {
+		required: true,
+		type: [String],
+		default: [],
 	}
 })
 

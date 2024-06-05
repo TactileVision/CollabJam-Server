@@ -11,7 +11,9 @@ export const assembleTacton = (instructions: TactonInstruction[], name: string, 
 			favorite: false,
 			bodyTags: [],
 			customTags: [],
-			description: "",
+			notes: "",
+			intention: "",
+			prompt: "",
 			recordDate: new Date()
 		}
 	} as Tacton

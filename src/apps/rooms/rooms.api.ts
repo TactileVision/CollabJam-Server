@@ -48,7 +48,7 @@ const RoomsAPI = (socket: Socket) => {
 		})
 		io.to(req.id).emit(WS_MSG_TYPE.UPDATE_USER_ACCOUNT_CLI, user);
 
-		socket.emit(WS_MSG_TYPE.UPDATE_AVAILABLE_TAGS_CLI, {customTags: await TagsDB.getCustomTags(), bodyTags: await TagsDB.getBodyTags() })
+		socket.emit(WS_MSG_TYPE.UPDATE_AVAILABLE_TAGS_CLI, {customTags: await TagsDB.getCustomTags(), bodyTags: await TagsDB.getBodyTags(), promptTags: await TagsDB.getPromptTags() })
 	})
 
 	socket.on(WS_MSG_TYPE.UPDATE_ROOM_MODE_SERV, async (req: UpdateRoomMode) => {

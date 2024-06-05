@@ -23,7 +23,17 @@ export const TactonMetadataSchema = new Mongoose.Schema({
 		required: true,
 		default: new Date()
 	},
-	description: {
+	notes: {
+		type: String,
+		required: false,
+		default: ""
+	},
+	prompt: {
+		type: String,
+		required: false,
+		default: ""
+	},
+	intention: {
 		type: String,
 		required: false,
 		default: ""

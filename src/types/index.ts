@@ -34,7 +34,9 @@ export class TactonRecording {
                 iteration: 0,
                 favorite: this.favorite,
                 recordDate: this.recordDate == undefined ? new Date() : this.recordDate,
-                description: "",
+                notes: "",
+                intention: "",
+                prompt: "",
                 customTags: [],
                 bodyTags: []
             },

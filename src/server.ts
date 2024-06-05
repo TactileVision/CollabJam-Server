@@ -9,7 +9,7 @@ import { ClientToServerEvents, ServerToClientEvents, } from '@sharedTypes/websoc
 import { Logger } from "./util/Logger";
 import { TactonProcessorCallbackBindings, TactonsWebsocketAPI } from './apps/tactons/tactons.api';
 import { TactonProcessor, tactonProcessors } from './apps/tactons/logic/tactons.domain';
-import { defaultBodyTags, defaultCustomTags } from './util/DefaultTags';
+import { defaultBodyTags, defaultCustomTags, defaultPromptTags } from './util/DefaultTags';
 
 const server = createServer();
 
@@ -46,7 +46,7 @@ initDB().then(async () => {
             TactonProcessorCallbackBindings(p, room.id)
         }
     })
-    TagsDB.initTags(defaultBodyTags, defaultCustomTags)
+    TagsDB.initTags(defaultBodyTags, defaultCustomTags, defaultPromptTags)
 
 }
 ).catch(console.error)

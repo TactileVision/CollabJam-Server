@@ -16,3 +16,5 @@ export const defaultBodyTags: string[] = [
 ];
 
 export const defaultCustomTags: string[] = []
+
+export const defaultPromptTags: string[] = ["walking", "running", "crawling"]

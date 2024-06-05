@@ -64,20 +64,29 @@ export const TactonsWebsocketAPI = (socket: Socket) => {
 			const iteration = await getIterationForName(req.metadata.name)
 			req.metadata.iteration = iteration
 		}
+	
 		await TactonModel.updateOne({ uuid: req.tactonId }, { metadata: req.metadata })
 		// console.log(s)
 		// console.log(save)
 
 		//TODO if something went wrong, send back the old metadata alder
 		io.to(req.roomId).emit(WS_MSG_TYPE.CHANGE_TACTON_METADATA_CLI, req)
-		const didUpdate = await TagsDB.addCustomTags(req.metadata.customTags)
-		if (didUpdate) {
+
+		const didUpdateCustomTags = await TagsDB.addCustomTags(req.metadata.customTags)
+		if (didUpdateCustomTags) {
 			const tags = await TagModel.findOne({})
 			if (tags != undefined) {
-				io.emit(WS_MSG_TYPE.UPDATE_AVAILABLE_TAGS_CLI, { customTags: tags.customTags, bodyTags: undefined })
+				io.emit(WS_MSG_TYPE.UPDATE_AVAILABLE_TAGS_CLI, { customTags: tags.customTags, bodyTags: null, promptTags: null })
 			}
 		}
 
+		const didUpdatePrompts = await TagsDB.addPromptTags([req.metadata.prompt])
+		if (didUpdatePrompts) {
+			const tags = await TagModel.findOne({})
+			if (tags != undefined) {
+				io.emit(WS_MSG_TYPE.UPDATE_AVAILABLE_TAGS_CLI, { customTags: null, bodyTags: null, promptTags: tags.promptTags })
+			}
+		}
 
 	})
 

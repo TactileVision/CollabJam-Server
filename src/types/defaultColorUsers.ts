@@ -17,8 +17,21 @@ export const getColorForUser = (userId: string): string => {
 
 const colorMap: Map<string, string> = new Map<string, string>()
 const colors = [
-	"#D790FF", "#FF34FF", "#A079BF", "#CC0744",
-	"#FFFF00", "#FFB500", "#FF913F", "#D16100",
-	"#8CD0FF", "#1CE6FF", "#3B5DFF", "#0AA6D8",
-	"#4FC601", "#3B9700", "#9B9700", "#456648"
+	"#203105",
+	"#D790FF", 
+	"#FFFF00", 
+	"#1CE6FF", 
+	"#A079BF", 
+	"#FFB500", 
+	"#FF34FF", 
+	"#4FC601", 
+	"#FF913F", 
+	"#8CD0FF", 
+	"#3B9700", 
+	"#3B5DFF", 
+	"#D16100",
+	"#0AA6D8",
+	"#9B9700", 
+	"#CC0744",
+	"#456648"
 ]

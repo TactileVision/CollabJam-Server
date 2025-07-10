@@ -38,7 +38,7 @@ export const TagSchema = new Mongoose.Schema({
 	id: {
 		type: String,
 		required: true,
-		default:""
+		default: ""
 	},
 	bodyTags: {
 		require: true,
@@ -76,4 +76,8 @@ export const RoomSchema = new Mongoose.Schema({
 	maxDurationRecord: Number,
 	currentRecordingTime: Number,
 	participants: [{ type: UserSchema }],
+	editingUser: {
+		type: String,
+		default: null,  // optional, sets default to null
+	}
 })

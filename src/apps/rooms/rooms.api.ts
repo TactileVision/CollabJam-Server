@@ -1,8 +1,8 @@
-import { RequestEnterRoom, RequestUpdateUser, UpdateRoomMode, WS_MSG_TYPE } from "@sharedTypes/websocketTypes";
+import { RequestEnterRoom, RequestUpdateUser, UpdateEditingUser, UpdateRoomMode, WS_MSG_TYPE } from "@sharedTypes/websocketTypes";
 import { io } from "../../server";
 import * as RoomDB from './rooms.data-access'
 import * as TagsDB from '../tags/tags.data-access'
-import {  Room } from "@sharedTypes/roomTypes";
+import { Room } from "@sharedTypes/roomTypes";
 import { Logger } from "../../util/Logger";
 import { Socket } from "socket.io";
 import { tactonProcessors } from "../tactons/logic/tactons.domain";
@@ -48,7 +48,7 @@ const RoomsAPI = (socket: Socket) => {
 		})
 		io.to(req.id).emit(WS_MSG_TYPE.UPDATE_USER_ACCOUNT_CLI, user);
 
-		socket.emit(WS_MSG_TYPE.UPDATE_AVAILABLE_TAGS_CLI, {customTags: await TagsDB.getCustomTags(), bodyTags: await TagsDB.getBodyTags(), promptTags: await TagsDB.getPromptTags() })
+		socket.emit(WS_MSG_TYPE.UPDATE_AVAILABLE_TAGS_CLI, { customTags: await TagsDB.getCustomTags(), bodyTags: await TagsDB.getBodyTags(), promptTags: await TagsDB.getPromptTags() })
 	})
 
 	socket.on(WS_MSG_TYPE.UPDATE_ROOM_MODE_SERV, async (req: UpdateRoomMode) => {
@@ -74,6 +74,15 @@ const RoomsAPI = (socket: Socket) => {
 		Logger.info(r)
 		if (r != undefined)
 			io.to(req.roomId).emit(WS_MSG_TYPE.ROOM_INFO_CLI, r)
+	})
+
+	socket.on(WS_MSG_TYPE.UPDATE_EDITING_USER_SERV, async (req: UpdateEditingUser) => {
+		const room = await RoomDB.getRoom(req.roomId)
+		if (room == undefined) return
+
+		await RoomDB.setEditingUser(room.id, req.userId)
+		Logger.info(`New editing user ${req.userId} for room ${req.roomId}`)
+		io.to(req.roomId).emit(WS_MSG_TYPE.UPDATE_EDITING_USER_CLI, req)
 	})
 
 }

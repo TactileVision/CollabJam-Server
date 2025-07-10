@@ -88,6 +88,10 @@ const setRecordMode = async (roomId: string, recordMode: InteractionMode) => {
 	await RoomModel.updateOne({ id: roomId }, { mode: recordMode })
 }
 
+const setEditingUser = async (roomId: string, userId: string | null) => {
+	await RoomModel.updateOne({ id: roomId }, { editingUser: userId })
+}
+
 
 
 export async function setNamePrefix(roomId: string, prefix: string) {
@@ -106,5 +110,5 @@ export {
 	deleteUser,
 	getTactonsForRoom,
 	getTacton,
-
+	setEditingUser
 }

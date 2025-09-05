@@ -54,7 +54,7 @@ export const TactonsWebsocketAPI = (socket: Socket) => {
 	})
 
 	socket.on(WS_MSG_TYPE.CHANGE_TACTON_METADATA_SERV, async (req: ChangeTactonMetadata) => {
-		Logger.info(`Upadating tacton metadata for ${req.tactonId}`)
+		Logger.info(`Updating tacton metadata for ${req.tactonId}`)
 
 		const s = await TactonModel.findOne({ uuid: req.tactonId })
 		if (s == undefined) return

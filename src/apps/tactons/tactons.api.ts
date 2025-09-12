@@ -91,7 +91,7 @@ export const TactonsWebsocketAPI = (socket: Socket) => {
 	})
 
 	socket.on(WS_MSG_TYPE.UPDATE_TACTON_SERV, async (req: UpdateTacton) => {
-		Logger.info(`Upadating tacton instructions for ${req.tactonId}`)
+		Logger.info(`Updating tacton instructions for ${req.tactonId}`)
 		//TODO Think about the merit of storing each change into the mongo db
 		let tacton = await TactonModel.findOne({ uuid: req.tactonId })
 		if (tacton == undefined) return

@@ -17,5 +17,5 @@ export class JammingHandler implements InteractionHandler, OutputHandler {
 	};
 	onHasFinished: ((instructions: TactonInstruction[] | null) => void) | null = () => {
 
-	};;
+	};
 }

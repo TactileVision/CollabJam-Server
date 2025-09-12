@@ -9,7 +9,13 @@ import * as TagsDB from '../tags/tags.data-access';
 import { TactonModel, TagModel } from "../../util/dbaccess";
 import { InteractionMode } from "@sharedTypes/roomTypes";
 import { ObjectId, } from "mongodb";
-import { Tacton, } from "@sharedTypes/tactonTypes";
+import {
+	DUMMY_GROUP_UUID, DUMMY_UUID,
+	InstructionWait,
+	isInstructionSetParameter, isInstructionWait,
+	Tacton,
+	TactonInstruction,
+} from "@sharedTypes/tactonTypes";
 import { v4 as uuidv4 } from "uuid";
 import { getIterationForName } from "./tactons.data-access";
 
@@ -52,7 +58,6 @@ export const TactonsWebsocketAPI = (socket: Socket) => {
 			io.to(req.roomId).emit(WS_MSG_TYPE.GET_TACTON_CLI, copy as unknown as Tacton)
 		}
 	})
-
 	socket.on(WS_MSG_TYPE.CHANGE_TACTON_METADATA_SERV, async (req: ChangeTactonMetadata) => {
 		Logger.info(`Updating tacton metadata for ${req.tactonId}`)
 
@@ -89,7 +94,6 @@ export const TactonsWebsocketAPI = (socket: Socket) => {
 		}
 
 	})
-
 	socket.on(WS_MSG_TYPE.UPDATE_TACTON_SERV, async (req: UpdateTacton) => {
 		Logger.info(`Updating tacton instructions for ${req.tactonId}`)
 		//TODO Think about the merit of storing each change into the mongo db
@@ -97,8 +101,9 @@ export const TactonsWebsocketAPI = (socket: Socket) => {
 		if (tacton == undefined) return
 		// console.log(tacton)
 		//TODO 😅
-
-		tacton.instructions = req.tacton.instructions as any
+		
+		const sanitizedInstructions: TactonInstruction[] = sanitizeInstructions(req.tacton.instructions);
+		tacton.instructions = sanitizedInstructions as any
 
 		// console.log(req.tacton.instructions)
 		// const x = await tacton.updateOne({ uuid: req.tactonId },
@@ -206,4 +211,62 @@ export const TactonProcessorCallbackBindings = (p: TactonProcessor, roomId: stri
 		p.inputInteractionMode(InteractionMode.Overdubbing, { newMode: InteractionMode.Jamming, roomId: roomId, tactonId: tactonId })
 
 	}
+}
+function sanitizeInstructions(instructions: TactonInstruction[]): TactonInstruction[] {
+	const activeUuids: Map<number, string> = new Map<number, string>();
+	const sanitized: TactonInstruction[] = [];
+
+	// add missing uuids, in case blocks were copied
+	for (const instr of instructions) {
+		if (isInstructionSetParameter(instr)) {
+			const sp = instr.setParameter;
+			const finalUuids: string[] = [];
+
+			sp.channels?.forEach((ch, idx): void => {
+				let u: string = sp.uuids?.[idx];
+				if (!u || u.startsWith(DUMMY_UUID)) {
+					u = uuidv4();
+				}
+
+				if (sp.intensity > 0) {
+					activeUuids.set(ch, u);
+				} else {
+					const existing: string | undefined = activeUuids.get(ch);
+					u = existing ?? u;
+					activeUuids.delete(ch);
+				}
+
+				finalUuids[idx] = u;
+			});
+
+			sanitized.push({
+				setParameter: {
+					intensity: sp.intensity,
+					channels: sp.channels ?? [],
+					uuids: finalUuids,
+					groupUuids: sp.groupUuids ?? [],
+				},
+			});
+		} else if (isInstructionWait(instr)) {
+			sanitized.push(instr as InstructionWait);
+		}
+	}
+
+	// add groupUuids in case copied blocks were grouped
+	const dummyGroupMap: Map<string, string> = new Map<string, string>();
+	sanitized.forEach(instr => {
+		if (isInstructionSetParameter(instr)) {
+			const sp = instr.setParameter;
+			sp.groupUuids?.forEach((g: string | null, idx: number): void => {
+				if (g?.startsWith(DUMMY_GROUP_UUID)) {
+					if (!dummyGroupMap.has(g)) {
+						dummyGroupMap.set(g, sp.uuids[idx]);
+					}
+					sp.groupUuids[idx] = dummyGroupMap.get(g)!;
+				}
+			});
+		}
+	});
+
+	return sanitized;
 }

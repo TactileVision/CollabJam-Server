@@ -25,7 +25,7 @@ export function turnOffAllOutputs(t: TactonInstruction[], lastModified: number) 
 	const sp = t.filter(i => { return isInstructionSetParameter(i) == true }) as InstructionSetParameter[]
 	const uniqueChannels = [...new Set(sp.map(item => item.setParameter.channels).flat())];
 	t.push({ wait: { miliseconds: new Date().getTime() - lastModified } })
-	t.push({ setParameter: { intensity: 0, channels: uniqueChannels } })
+	t.push({ setParameter: { intensity: 0, channels: uniqueChannels, uuids: [], groupUuids: [null]} })
 }
 
 

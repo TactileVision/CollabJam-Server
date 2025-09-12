@@ -35,7 +35,9 @@ const addInstructionsToTactonRecording = (roomId: string, clientInstrution: Inst
         const parameter = {
             setParameter: {
                 channels: clInstruct.channels,
-                intensity: clInstruct.intensity
+                intensity: clInstruct.intensity,
+                uuids: [],
+                groupUuids: [null]
             }
         }
         instructions.push(parameter)

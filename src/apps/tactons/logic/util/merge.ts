@@ -1,10 +1,13 @@
 import { InstructionSetParameter, InstructionWait, TactonInstruction, isInstructionSetParameter, isInstructionWait } from "@sharedTypes/tactonTypes";
+import {v4 as uuidv4} from 'uuid';
 interface ChannelInstructionBlock {
 	startMs: number,
 	length: number,
 	intensity: number,
 	channelId: number,
-	ends: boolean
+	ends: boolean,
+	uuid: string,
+	groupUuid: string | undefined
 }
 const optimizeBlocksByChannel = (blocksByChannel: ChannelInstructionBlock[][]) => {
 	const optimizedBlocks: ChannelInstructionBlock[][] = Array.from({ length: 4 }, () => []);
@@ -49,7 +52,7 @@ export const mergeTactons = (...tactons: TactonInstruction[][]) => {
 		for (const instruction of instructions) {
 			if (isInstructionSetParameter(instruction)) {
 				const i = instruction as InstructionSetParameter
-				i.setParameter.channels.forEach(channel => {
+				i.setParameter.channels.forEach((channel, index: number) => {
 					const currentBlock = currentBlocksByChannel[channel];
 
 					if (currentBlock && i.setParameter.intensity === 0) {
@@ -60,9 +63,17 @@ export const mergeTactons = (...tactons: TactonInstruction[][]) => {
 						blocksByChannel[channel].push(currentBlock);
 						currentBlocksByChannel[channel] = undefined;
 					}
-
+					
 					if (i.setParameter.intensity > 0) {
-						currentBlocksByChannel[channel] = { startMs: currentTime, length: 0, intensity: i.setParameter.intensity, channelId: channel, ends: false };
+						currentBlocksByChannel[channel] = { 
+							startMs: currentTime,
+							length: 0,
+							intensity: i.setParameter.intensity,
+							channelId: channel,
+							ends: false,
+							uuid: i.setParameter.uuids[index] ?? uuidv4(),
+							groupUuid: i.setParameter.groupUuids[index] ?? undefined
+						};
 					}
 				});
 			} else
@@ -110,7 +121,9 @@ export const mergeTactons = (...tactons: TactonInstruction[][]) => {
 									length: mergedBlock.startMs - block.startMs,
 									channelId: channel,
 									intensity: block.intensity,
-									ends: false
+									ends: false,
+									uuid: block.uuid,
+									groupUuid: block.groupUuid
 								})
 							}
 
@@ -145,56 +158,86 @@ export const mergeTactons = (...tactons: TactonInstruction[][]) => {
 
 	// Transform blocks into instruction format
 	const instructions: TactonInstruction[] = [];
-	const channelNeedsEndAt: (number | undefined)[] = [];
-	let lastInstructionAt = 0;
-
-	const addEndInstruction = (time: number, channel: number) => {
+	const channelEndInfo: Array<{ 
+		time: number;
+		uuid: string;
+		groupUuid?: string
+	} | undefined> = Array.from({ length: optimizedBlocksByChannel.length }, () => undefined);
+	let lastInstructionAt: number = 0;
+	const addEndInstruction = (time: number, channel: number, uuid: string, groupUuid?: string) => {
 		if (time - lastInstructionAt > 0) {
 			instructions.push({ wait: { miliseconds: time - lastInstructionAt } });
 		}
-		instructions.push({ setParameter: { channels: [channel], intensity: 0 } });
+		instructions.push({ 
+			setParameter: { 
+				channels: [channel], 
+				intensity: 0, 
+				uuids: [uuid], 
+				groupUuids: [groupUuid ?? null] 
+			} 
+		});
 		lastInstructionAt = time;
-		channelNeedsEndAt[channel] = undefined;
+		channelEndInfo[channel] = undefined;
 	}
 
 	mergedBlocks.forEach((block) => {
 		// For all channels that ended in the past, push the wait time until the end and the end instruction
-		const channelsEnd = channelNeedsEndAt.map((time, channel) => [time, channel]).sort((a, b) => (a[0] || 0) - (b[0] || 0));
-		channelsEnd.forEach(([time, channel]) => {
-			if (time !== undefined && channel !== undefined) {
-				if (time < block.startMs) {
-					addEndInstruction(time, channel);
-				}
+		for (let ch = 0; ch < channelEndInfo.length; ch++) {
+			const info = channelEndInfo[ch];
+			if (info && info.time <= block.startMs && info.time > lastInstructionAt) {
+				addEndInstruction(info.time, ch, info.uuid, info.groupUuid);
+			} else if (info && info.time <= block.startMs && info.time <= lastInstructionAt) {
+				channelEndInfo[ch] = undefined;
 			}
-		})
+		}
 
 		// if there is a gap between the current instruction and the next instruction, we want to push a wait instruction
 		if (block.startMs > lastInstructionAt) {
 			instructions.push({ wait: { miliseconds: block.startMs - lastInstructionAt } });
+			lastInstructionAt = block.startMs;
 		}
 
 		// now merge the current instruction block
 		instructions.push({
 			setParameter: {
 				intensity: block.intensity,
-				channels: [block.channelId]
+				channels: [block.channelId],
+				uuids: [block.uuid],
+				groupUuids: [block.groupUuid ?? null]
 			}
 		})
 
 		lastInstructionAt = block.startMs;
 
 		if (block.ends) {
-			channelNeedsEndAt[block.channelId] = block.startMs + block.length;
+			channelEndInfo[block.channelId] = {
+				time: block.startMs + block.length,
+				uuid: block.uuid,
+				groupUuid: block.groupUuid
+			}
 		} else {
-			channelNeedsEndAt[block.channelId] = undefined;
+			channelEndInfo[block.channelId] = undefined;
 		}
 	})
 
-	const channelsEnd = channelNeedsEndAt.map((time, channel) => [time, channel]).sort((a, b) => (a[0] || 0) - (b[0] || 0));
-	channelsEnd.forEach(([time, channel]) => {
-		if (time !== undefined && channel !== undefined) {
-			addEndInstruction(time, channel);
+	const remainingEnds = channelEndInfo
+		.map((info, ch) => info ? { channel: ch, ...info } : undefined)
+		.filter(Boolean) as { channel: number; time: number; uuid: string; groupUuid?: string }[];
+
+	remainingEnds.sort((a, b) => a.time - b.time);
+	remainingEnds.forEach(end => {
+		if (end.time > lastInstructionAt) {
+			instructions.push({ wait: { miliseconds: end.time - lastInstructionAt } });
 		}
+		instructions.push({
+			setParameter: {
+				channels: [end.channel],
+				intensity: 0,
+				uuids: [end.uuid],
+				groupUuids: [end.groupUuid ?? null]
+			}
+		});
+		lastInstructionAt = end.time;
 	});
 
 	// console.log({ instructions })
@@ -210,7 +253,9 @@ export const mergeTactons = (...tactons: TactonInstruction[][]) => {
 					currentInstruction = {
 						setParameter: {
 							channels: [...new Set([...currentInstruction.setParameter.channels, ...ni.setParameter.channels])],
-							intensity: currentInstruction.setParameter.intensity
+							intensity: currentInstruction.setParameter.intensity,
+							uuids: [...currentInstruction.setParameter.uuids, ...ni.setParameter.uuids],
+							groupUuids: [null]
 						}
 					};
 				} else {

@@ -1,4 +1,11 @@
-import { RequestEnterRoom, RequestUpdateUser, UpdateEditingUser, UpdateRoomMode, WS_MSG_TYPE } from "@sharedTypes/websocketTypes";
+import {
+	RequestEnterRoom,
+	RequestUpdateUser,
+	UpdateEditingUser,
+	UpdateEditingUserUUIDS,
+	UpdateRoomMode,
+	WS_MSG_TYPE
+} from "@sharedTypes/websocketTypes";
 import { io } from "../../server";
 import * as RoomDB from './rooms.data-access'
 import * as TagsDB from '../tags/tags.data-access'
@@ -85,5 +92,13 @@ const RoomsAPI = (socket: Socket) => {
 		io.to(req.roomId).emit(WS_MSG_TYPE.UPDATE_EDITING_USER_CLI, req)
 	})
 
+	socket.on(WS_MSG_TYPE.UPDATE_EDITING_USER_UUIDS_SERV, async (req: UpdateEditingUserUUIDS) => {
+		const room = await RoomDB.getRoom(req.roomId)
+		if (room == undefined) return
+		io.to(req.roomId).emit(WS_MSG_TYPE.UPDATE_EDITING_USER_UUIDS_CLI, req);
+		//await RoomDB.setEditingUser(room.id, req.userId)
+		//Logger.info(`New editing user ${req.userId} for room ${req.roomId}`)
+		//io.to(req.roomId).emit(WS_MSG_TYPE.UPDATE_EDITING_USER_CLI, req)
+	})
 }
 export { RoomsAPI }

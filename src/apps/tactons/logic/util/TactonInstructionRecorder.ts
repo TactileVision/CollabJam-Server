@@ -6,6 +6,7 @@ export class TactonInstructionRecorder {
 	reset() {
 		this.instructions = []
 		this.isRecording = false;
+		this.activeUuids.clear();
 	}
 	recordDate: Date | undefined = undefined
 	lastModified: number = new Date().getTime()

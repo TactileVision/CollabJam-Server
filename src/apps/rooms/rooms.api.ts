@@ -37,6 +37,13 @@ const RoomsAPI = (socket: Socket) => {
 		console.log(req)
 		const u = await RoomDB.getUsersOfRoom(req.roomId)
 		io.to(req.roomId).emit(WS_MSG_TYPE.UPDATE_USER_ACCOUNT_CLI, u);
+		// unlock blocks
+		const updateEditingUserReq: UpdateEditingUserUUIDS = {
+			roomId: req.roomId,
+			userId: req.user.id,
+			uuids: []
+		}
+		io.to(req.roomId).emit(WS_MSG_TYPE.UPDATE_EDITING_USER_UUIDS_CLI, updateEditingUserReq);
 	})
 
 	socket.on(WS_MSG_TYPE.ENTER_ROOM_SERV, async (req: RequestEnterRoom) => {
@@ -93,7 +100,7 @@ const RoomsAPI = (socket: Socket) => {
 	})
 
 	socket.on(WS_MSG_TYPE.UPDATE_EDITING_USER_UUIDS_SERV, async (req: UpdateEditingUserUUIDS) => {
-		const room = await RoomDB.getRoom(req.roomId)
+		const room: Room | undefined = await RoomDB.getRoom(req.roomId)
 		if (room == undefined) return
 		io.to(req.roomId).emit(WS_MSG_TYPE.UPDATE_EDITING_USER_UUIDS_CLI, req);
 		//await RoomDB.setEditingUser(room.id, req.userId)

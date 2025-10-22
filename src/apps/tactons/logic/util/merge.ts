@@ -184,10 +184,8 @@ export const mergeTactons = (...tactons: TactonInstruction[][]) => {
 		// For all channels that ended in the past, push the wait time until the end and the end instruction
 		for (let ch = 0; ch < channelEndInfo.length; ch++) {
 			const info = channelEndInfo[ch];
-			if (info && info.time <= block.startMs && info.time > lastInstructionAt) {
+			if (info && info.time <= block.startMs) {
 				addEndInstruction(info.time, ch, info.uuid, info.groupUuid);
-			} else if (info && info.time <= block.startMs && info.time <= lastInstructionAt) {
-				channelEndInfo[ch] = undefined;
 			}
 		}
 
@@ -240,8 +238,6 @@ export const mergeTactons = (...tactons: TactonInstruction[][]) => {
 		lastInstructionAt = end.time;
 	});
 
-	// console.log({ instructions })
-
 	// Optimize instructions to merge set parameter instructions that occur at the same time with the same intensity
 	const optimizedInstructions: TactonInstruction[] = [];
 	let currentInstruction: InstructionSetParameter | undefined = undefined;
@@ -250,12 +246,15 @@ export const mergeTactons = (...tactons: TactonInstruction[][]) => {
 			const ni = nextInstruction as InstructionSetParameter
 			if (currentInstruction) {
 				if (currentInstruction.setParameter.intensity === ni.setParameter.intensity) {
+					const mergedChannels: number[] = [...currentInstruction.setParameter.channels, ...ni.setParameter.channels];
+					const mergedUuids: string[] = [...currentInstruction.setParameter.uuids, ...ni.setParameter.uuids];
+					const mergedGroupUuids: (string | null)[] = [...currentInstruction.setParameter.groupUuids, ...ni.setParameter.groupUuids];
 					currentInstruction = {
 						setParameter: {
-							channels: [...new Set([...currentInstruction.setParameter.channels, ...ni.setParameter.channels])],
+							channels: mergedChannels,
 							intensity: currentInstruction.setParameter.intensity,
-							uuids: [...currentInstruction.setParameter.uuids, ...ni.setParameter.uuids],
-							groupUuids: [null]
+							uuids: mergedUuids,
+							groupUuids: mergedGroupUuids
 						}
 					};
 				} else {
@@ -282,4 +281,3 @@ export const mergeTactons = (...tactons: TactonInstruction[][]) => {
 
 	return optimizedInstructions;
 }
-

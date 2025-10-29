@@ -14,6 +14,8 @@ import { Logger } from "../../util/Logger";
 import { Socket } from "socket.io";
 import { tactonProcessors } from "../tactons/logic/tactons.domain";
 import { getColorForUser } from "../../types/defaultColorUsers";
+import {isInstructionSetParameter, Tacton, TactonInstruction} from "@sharedTypes/tactonTypes";
+import {v4 as uuidv4} from "uuid";
 
 const RoomsAPI = (socket: Socket) => {
 	Logger.info("Setting up Tacton API for new room connection")
@@ -52,7 +54,8 @@ const RoomsAPI = (socket: Socket) => {
 
 		const r = await RoomDB.getRoom(req.id)
 		await RoomDB.assignUserToRoom(req.id, { name: req.userName, id: socket.id, color: getColorForUser(req.id), muted: false })
-		const tactons = await RoomDB.getTactonsForRoom(req.id)
+		let tactons: Tacton[] = await RoomDB.getTactonsForRoom(req.id)
+		tactons = migrateToUuids(tactons);
 		const user = await RoomDB.getUsersOfRoom(req.id)
 		socket.emit(WS_MSG_TYPE.ENTER_ROOM_CLI, {
 			room: r,
@@ -109,3 +112,89 @@ const RoomsAPI = (socket: Socket) => {
 	})
 }
 export { RoomsAPI }
+
+function migrateToUuids(tactons: Tacton[]): Tacton[] {
+	tactons.forEach((tacton: Tacton): void => {
+		console.log(tacton);
+		let isValid: boolean = true;
+		for (const instruction of tacton.instructions) {
+			// check the first setParameter for uuids
+			if (isInstructionSetParameter(instruction)) {	
+				// must has uuids
+				if (!instruction.setParameter.uuids) {
+					isValid = false;
+					break;
+				}
+
+				// uuids must be same length as array
+				const uuidsLength = instruction.setParameter.uuids.length;
+				const channelLength = instruction.setParameter.channels.length;
+				if (uuidsLength !== channelLength) {						
+					isValid = false;
+					break;
+				}
+				
+				// uuids must be string
+				instruction.setParameter.uuids.forEach((uuids) => {
+					if (typeof uuids !== "string") {
+						isValid = false;
+					}
+				})
+				
+				if (!isValid) break;
+			} 
+		}
+		
+		if (!isValid) {
+			Logger.info(`Invalid:  ${tacton.metadata.name} ${tacton.metadata.iteration}`);
+			tacton.instructions = addUuidsToInstruction(tacton.instructions);
+		}
+	});	
+	return tactons;
+}
+function addUuidsToInstruction(instructions: TactonInstruction[]): TactonInstruction[] {
+	const activeUuidsByChannel: (string | undefined)[] = Array(4).fill(undefined);
+	instructions.forEach((instruction: TactonInstruction): void => {
+		if (!isInstructionSetParameter(instruction)) return;
+
+		const params = instruction.setParameter;
+		const channels = params.channels;
+		
+		// groupUuids
+		if (!params.groupUuids || !Array.isArray(params.groupUuids)) {
+			params.groupUuids = channels.map(() => null);
+		} else if (params.groupUuids.length !== channels.length) {
+			const existing = params.groupUuids;
+			params.groupUuids = channels.map((_, i) => existing[i] ?? null);
+		}
+
+		//uuids 
+		if (!params.uuids || !Array.isArray(params.uuids)) {
+			params.uuids = [];
+		}
+
+		channels.forEach((ch, idx) => {
+			const intensity = params.intensity;
+
+			if (intensity > 0) {
+				// new Block -> generate uuid
+				if (!activeUuidsByChannel[ch]) {
+					activeUuidsByChannel[ch] = uuidv4();
+				}
+				params.uuids[idx] = activeUuidsByChannel[ch]!;
+			} else {
+				// end of block -> use uuid
+				const activeUuid = activeUuidsByChannel[ch];
+				if (activeUuid) {
+					params.uuids[idx] = activeUuid;
+					activeUuidsByChannel[ch] = undefined;
+				} else {
+					// fallback ?
+					params.uuids[idx] = uuidv4();
+				}
+			}
+		});
+	});
+
+	return instructions;
+}

@@ -19,8 +19,6 @@ export class TactonInstructionRecorder {
 	}
 
 	//call this when a instruction is received
-	// TODO activeUUids should call clear() at the start, but record() is used more then once
-	// were is the initial call to record, at this point, the map should be cleared
 	record(newInstructions: InstructionToClient[], startImmediately: boolean): void {				
 		this.isRecording = true;
 		const timeDiff = new Date().getTime() - this.lastModified

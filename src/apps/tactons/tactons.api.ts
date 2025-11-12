@@ -1,5 +1,13 @@
 import { Logger } from "../../util/Logger";
-import { ChangeTactonMetadata, RequestSendTactileInstruction, TactonIdentifier, TactonMove, UpdateTacton, WS_MSG_TYPE } from "@sharedTypes/websocketTypes";
+import {
+	ChangeTactonMetadata, RedoAction,
+	RequestSendTactileInstruction,
+	TactonIdentifier,
+	TactonMove,
+	UndoAction,
+	UpdateTacton,
+	WS_MSG_TYPE
+} from "@sharedTypes/websocketTypes";
 import { io } from "../../server";
 import { Socket } from "socket.io";
 import { getRoom, } from "../rooms/rooms.data-access";
@@ -20,6 +28,7 @@ import { v4 as uuidv4 } from "uuid";
 import { getIterationForName } from "./tactons.data-access";
 
 import { assembleTacton } from "./logic/util/assemble";
+import UndoRedoModule from "../../store/UndoRedoModule";
 
 
 export const TactonsWebsocketAPI = (socket: Socket) => {
@@ -104,6 +113,9 @@ export const TactonsWebsocketAPI = (socket: Socket) => {
 		
 		const sanitizedInstructions: TactonInstruction[] = sanitizeInstructions(req.tacton.instructions);
 		tacton.instructions = sanitizedInstructions as any
+		
+		// track changes
+		UndoRedoModule.updateTacton(req.tactonId, sanitizedInstructions);
 
 		// console.log(req.tacton.instructions)
 		// const x = await tacton.updateOne({ uuid: req.tactonId },
@@ -159,6 +171,43 @@ export const TactonsWebsocketAPI = (socket: Socket) => {
 		//TODO SEND delete message to old room
 		//TODO SEND add message to new room
 	})
+	
+	// undo & redo
+	socket.on(WS_MSG_TYPE.UNDO_ACTION_SERV, async (req: UndoAction) => {
+		// get tacton
+		let tacton = await TactonModel.findOne({ uuid: req.tactonId })
+		if (tacton == undefined) {
+			Logger.error(`Tacton ${req.tactonId} not found`);
+			return
+		}
+		
+		// get following state of instructions
+		const previousInstructionState: TactonInstruction[] | undefined = UndoRedoModule.undoAction(req.tactonId);
+		if (previousInstructionState === undefined) return;
+		
+		// update
+		tacton.instructions = previousInstructionState as any;
+		const x = await tacton.save();
+		io.to(req.roomId).emit(WS_MSG_TYPE.UPDATE_TACTON_CLI, { roomId: req.roomId, tacton: tacton as unknown as Tacton, tactonId: req.tactonId })
+	});
+
+	socket.on(WS_MSG_TYPE.REDO_ACTION_SERV, async (req: RedoAction) => {
+		// get tacton
+		let tacton = await TactonModel.findOne({ uuid: req.tactonId })
+		if (tacton == undefined) {
+			Logger.error(`Tacton ${req.tactonId} not found`);
+			return
+		}
+
+		// get following state of instructions
+		const previousInstructionState: TactonInstruction[] | undefined = UndoRedoModule.redoAction(req.tactonId);
+		if (previousInstructionState === undefined) return;
+		
+		// update
+		tacton.instructions = previousInstructionState as any;
+		const x = await tacton.save();
+		io.to(req.roomId).emit(WS_MSG_TYPE.UPDATE_TACTON_CLI, { roomId: req.roomId, tacton: tacton as unknown as Tacton, tactonId: req.tactonId })
+	});
 }
 
 export const TactonProcessorCallbackBindings = (p: TactonProcessor, roomId: string) => {

@@ -17,6 +17,7 @@ import { getColorForUser } from "../../types/defaultColorUsers";
 import {isInstructionSetParameter, Tacton, TactonInstruction} from "@sharedTypes/tactonTypes";
 import {v4 as uuidv4} from "uuid";
 import RoomModule from "../../store/RoomModule";
+import UndoRedoModule from "../../store/UndoRedoModule";
 
 const RoomsAPI = (socket: Socket) => {
 	Logger.info("Setting up Tacton API for new room connection")
@@ -40,6 +41,7 @@ const RoomsAPI = (socket: Socket) => {
 		console.log(req)
 		const u = await RoomDB.getUsersOfRoom(req.roomId)
 		io.to(req.roomId).emit(WS_MSG_TYPE.UPDATE_USER_ACCOUNT_CLI, u);
+		
 		// unlock blocks
 		RoomModule.setLocks(req.user.id, []);
 		const updateEditingUserResp: UpdateEditingUserUUIDS = {
@@ -47,6 +49,15 @@ const RoomsAPI = (socket: Socket) => {
 			userId: req.user.id,
 			uuids: []
 		}
+		
+		// if lastUser, stop tracking
+		if (u.length === 0) {
+			let tactons: Tacton[] = await RoomDB.getTactonsForRoom(req.roomId);
+			tactons.forEach((tacton: Tacton): void => {
+				UndoRedoModule.untrackTacton(tacton.uuid);
+			});
+		}
+		
 		io.to(req.roomId).emit(WS_MSG_TYPE.UPDATE_EDITING_USER_UUIDS_CLI, updateEditingUserResp);
 	})
 

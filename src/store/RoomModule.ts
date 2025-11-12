@@ -82,6 +82,19 @@ const updateRecordingPrefix = (roomId: string, prefix: string): boolean => {
     return true
 }
 
+// Locks
+const lockedUuids: Record<string, string[]> = {};
+const setLocks = (userId: string, uuids: string[]): void => {
+    if (uuids.length == 0) {
+        delete lockedUuids[userId];
+    } else {
+        lockedUuids[userId] = uuids; 
+    }
+}
+const getLocks = (): Record<string, string[]> => {
+    return lockedUuids;
+}
+
 export default {
     createRoom,
     roomList,
@@ -90,5 +103,7 @@ export default {
     updateRoomInformation,
     removeRoom,
     updateRecordingPrefix,
-    updateMaxDuration
+    updateMaxDuration,
+    setLocks,
+    getLocks
 }

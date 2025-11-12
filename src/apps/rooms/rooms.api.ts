@@ -16,6 +16,7 @@ import { tactonProcessors } from "../tactons/logic/tactons.domain";
 import { getColorForUser } from "../../types/defaultColorUsers";
 import {isInstructionSetParameter, Tacton, TactonInstruction} from "@sharedTypes/tactonTypes";
 import {v4 as uuidv4} from "uuid";
+import RoomModule from "../../store/RoomModule";
 
 const RoomsAPI = (socket: Socket) => {
 	Logger.info("Setting up Tacton API for new room connection")
@@ -40,12 +41,13 @@ const RoomsAPI = (socket: Socket) => {
 		const u = await RoomDB.getUsersOfRoom(req.roomId)
 		io.to(req.roomId).emit(WS_MSG_TYPE.UPDATE_USER_ACCOUNT_CLI, u);
 		// unlock blocks
-		const updateEditingUserReq: UpdateEditingUserUUIDS = {
+		RoomModule.setLocks(req.user.id, []);
+		const updateEditingUserResp: UpdateEditingUserUUIDS = {
 			roomId: req.roomId,
 			userId: req.user.id,
 			uuids: []
 		}
-		io.to(req.roomId).emit(WS_MSG_TYPE.UPDATE_EDITING_USER_UUIDS_CLI, updateEditingUserReq);
+		io.to(req.roomId).emit(WS_MSG_TYPE.UPDATE_EDITING_USER_UUIDS_CLI, updateEditingUserResp);
 	})
 
 	socket.on(WS_MSG_TYPE.ENTER_ROOM_SERV, async (req: RequestEnterRoom) => {
@@ -57,11 +59,13 @@ const RoomsAPI = (socket: Socket) => {
 		let tactons: Tacton[] = await RoomDB.getTactonsForRoom(req.id)
 		tactons = migrateToUuids(tactons);
 		const user = await RoomDB.getUsersOfRoom(req.id)
+		const locks = RoomModule.getLocks();
 		socket.emit(WS_MSG_TYPE.ENTER_ROOM_CLI, {
 			room: r,
 			userId: socket.id,
 			participants: user,
-			recordings: tactons
+			recordings: tactons,
+			userLocks: locks
 		})
 		io.to(req.id).emit(WS_MSG_TYPE.UPDATE_USER_ACCOUNT_CLI, user);
 
@@ -104,18 +108,15 @@ const RoomsAPI = (socket: Socket) => {
 
 	socket.on(WS_MSG_TYPE.UPDATE_EDITING_USER_UUIDS_SERV, async (req: UpdateEditingUserUUIDS) => {
 		const room: Room | undefined = await RoomDB.getRoom(req.roomId)
-		if (room == undefined) return
+		if (room == undefined || req.userId == null) return
+		RoomModule.setLocks(req.userId, req.uuids);
 		io.to(req.roomId).emit(WS_MSG_TYPE.UPDATE_EDITING_USER_UUIDS_CLI, req);
-		//await RoomDB.setEditingUser(room.id, req.userId)
-		//Logger.info(`New editing user ${req.userId} for room ${req.roomId}`)
-		//io.to(req.roomId).emit(WS_MSG_TYPE.UPDATE_EDITING_USER_CLI, req)
 	})
 }
 export { RoomsAPI }
 
 function migrateToUuids(tactons: Tacton[]): Tacton[] {
 	tactons.forEach((tacton: Tacton): void => {
-		console.log(tacton);
 		let isValid: boolean = true;
 		for (const instruction of tacton.instructions) {
 			// check the first setParameter for uuids
@@ -146,7 +147,6 @@ function migrateToUuids(tactons: Tacton[]): Tacton[] {
 		}
 		
 		if (!isValid) {
-			Logger.info(`Invalid:  ${tacton.metadata.name} ${tacton.metadata.iteration}`);
 			tacton.instructions = addUuidsToInstruction(tacton.instructions);
 		}
 	});	

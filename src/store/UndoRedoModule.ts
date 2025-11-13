@@ -22,6 +22,7 @@ function clone<T>(obj: T): T {
  * If already present, nothing happens.
  */
 const startTrackingChanges = (tactonId: string, initialState: TactonInstruction[]): void => {
+    if (trackedTactons.has(tactonId)) return;
     trackedTactons.set(tactonId, {
         history: [clone({instructions: initialState})],
         pointer: 0,
@@ -32,13 +33,12 @@ const startTrackingChanges = (tactonId: string, initialState: TactonInstruction[
  * Adds a new state (replaces previous state),
  * older versions remain available for undo.
  */
-const updateTacton = (tactonId: string, newState: TactonInstruction[]): void => {
-    if (!trackedTactons.has(tactonId)) {
-        startTrackingChanges(tactonId, newState);
-        return;
+const updateTacton = (tactonId: string, newState: TactonInstruction[]): void => {    
+    const entry = trackedTactons.get(tactonId)!;
+    if (!entry) {
+        Logger.error(`Tacton ${tactonId} is not tracked`);
+        return undefined;
     }
-    
-    const entry = trackedTactons.get(tactonId)!;    
     entry.history = entry.history.slice(0, entry.pointer + 1);
     entry.history.push(clone({instructions: newState}));
 
@@ -91,6 +91,7 @@ const untrackTacton = (tactonId: string): void => {
 }
 
 export default {
+    startTrackingChanges,
     updateTacton,
     undoAction,
     redoAction,

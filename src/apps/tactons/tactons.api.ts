@@ -110,7 +110,11 @@ export const TactonsWebsocketAPI = (socket: Socket) => {
 		if (tacton == undefined) return
 		// console.log(tacton)
 		//TODO 😅
+
+		// start tracking changes
+		UndoRedoModule.startTrackingChanges(req.tactonId, tacton.instructions as unknown as TactonInstruction[]);
 		
+		// update instructions
 		const sanitizedInstructions: TactonInstruction[] = sanitizeInstructions(req.tacton.instructions);
 		tacton.instructions = sanitizedInstructions as any
 		

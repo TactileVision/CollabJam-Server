@@ -75,10 +75,5 @@ export const RoomSchema = new Mongoose.Schema({
 	},
 	maxDurationRecord: Number,
 	currentRecordingTime: Number,
-	participants: [{ type: UserSchema }],
-	editingUser: {
-		type: String,
-		default: null,  // optional, sets default to null
-	}
-	// TODO add uuids, -> if new user joins, he needs all blocked uuids
+	participants: [{ type: UserSchema }]
 })

@@ -1,7 +1,6 @@
 import {
 	RequestEnterRoom,
 	RequestUpdateUser,
-	UpdateEditingUser,
 	UpdateEditingUserUUIDS,
 	UpdateRoomMode,
 	WS_MSG_TYPE
@@ -106,15 +105,6 @@ const RoomsAPI = (socket: Socket) => {
 		Logger.info(r)
 		if (r != undefined)
 			io.to(req.roomId).emit(WS_MSG_TYPE.ROOM_INFO_CLI, r)
-	})
-
-	socket.on(WS_MSG_TYPE.UPDATE_EDITING_USER_SERV, async (req: UpdateEditingUser) => {
-		const room = await RoomDB.getRoom(req.roomId)
-		if (room == undefined) return
-
-		await RoomDB.setEditingUser(room.id, req.userId)
-		Logger.info(`New editing user ${req.userId} for room ${req.roomId}`)
-		io.to(req.roomId).emit(WS_MSG_TYPE.UPDATE_EDITING_USER_CLI, req)
 	})
 
 	socket.on(WS_MSG_TYPE.UPDATE_EDITING_USER_UUIDS_SERV, async (req: UpdateEditingUserUUIDS) => {

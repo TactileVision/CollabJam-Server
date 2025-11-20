@@ -33,7 +33,7 @@ const startTrackingChanges = (tactonId: string, initialState: TactonInstruction[
  * Adds a new state (replaces previous state),
  * older versions remain available for undo.
  */
-const updateTacton = (tactonId: string, newState: TactonInstruction[]): void => {    
+const updateTacton = (tactonId: string, newState: TactonInstruction[]): void => {
     const entry = trackedTactons.get(tactonId)!;
     if (!entry) {
         Logger.error(`Tacton ${tactonId} is not tracked`);

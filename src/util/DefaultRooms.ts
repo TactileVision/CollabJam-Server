@@ -10,7 +10,6 @@ export const defaultRooms: Room[] = [
 		mode: InteractionMode.Jamming,
 		name: "Demo 1",
 		recordingNamePrefix: "demo_1",
-		currentlyEditingUser: null,
 	},
 	{
 		currentRecordingTime: 0,
@@ -21,7 +20,6 @@ export const defaultRooms: Room[] = [
 		mode: InteractionMode.Jamming,
 		name: "Demo 2",
 		recordingNamePrefix: "demo_2",
-		currentlyEditingUser: null,
 
 	},
 	{
@@ -33,7 +31,6 @@ export const defaultRooms: Room[] = [
 		mode: InteractionMode.Jamming,
 		name: "Team_1",
 		recordingNamePrefix: "team_1",
-		currentlyEditingUser: null,
 	},
 	{
 		currentRecordingTime: 0,
@@ -44,7 +41,6 @@ export const defaultRooms: Room[] = [
 		mode: InteractionMode.Jamming,
 		name: "Team_1-P_1",
 		recordingNamePrefix: "team_1-p_1",
-		currentlyEditingUser: null,
 	},
 	{
 		currentRecordingTime: 0,
@@ -55,7 +51,6 @@ export const defaultRooms: Room[] = [
 		mode: InteractionMode.Jamming,
 		name: "Team_1-P_2",
 		recordingNamePrefix: "team_1-p_2",
-		currentlyEditingUser: null,
 	},
 	{
 		currentRecordingTime: 0,
@@ -66,7 +61,6 @@ export const defaultRooms: Room[] = [
 		mode: InteractionMode.Jamming,
 		name: "Team_2",
 		recordingNamePrefix: "team_2",
-		currentlyEditingUser: null,
 	},
 	{
 		currentRecordingTime: 0,
@@ -77,7 +71,6 @@ export const defaultRooms: Room[] = [
 		mode: InteractionMode.Jamming,
 		name: "Team_2-P_1",
 		recordingNamePrefix: "team_2-p_1",
-		currentlyEditingUser: null,
 	},
 	{
 		currentRecordingTime: 0,
@@ -88,7 +81,6 @@ export const defaultRooms: Room[] = [
 		mode: InteractionMode.Jamming,
 		name: "Team_2-P_2",
 		recordingNamePrefix: "team_2-p_2",
-		currentlyEditingUser: null,
 	},
 	{
 		currentRecordingTime: 0,
@@ -99,7 +91,6 @@ export const defaultRooms: Room[] = [
 		mode: InteractionMode.Jamming,
 		name: "Team_3",
 		recordingNamePrefix: "team_3",
-		currentlyEditingUser: null,
 	},
 	{
 		currentRecordingTime: 0,
@@ -110,7 +101,6 @@ export const defaultRooms: Room[] = [
 		mode: InteractionMode.Jamming,
 		name: "Team_3-P_1",
 		recordingNamePrefix: "team_3-p_1",
-		currentlyEditingUser: null,
 	},
 	{
 		currentRecordingTime: 0,
@@ -121,7 +111,6 @@ export const defaultRooms: Room[] = [
 		mode: InteractionMode.Jamming,
 		name: "Team_3-P_2",
 		recordingNamePrefix: "team_3-p_2",
-		currentlyEditingUser: null,
 	},
 	{
 		currentRecordingTime: 0,
@@ -132,7 +121,6 @@ export const defaultRooms: Room[] = [
 		mode: InteractionMode.Jamming,
 		name: "Team_4",
 		recordingNamePrefix: "team_4",
-		currentlyEditingUser: null,
 	},
 	{
 		currentRecordingTime: 0,
@@ -143,7 +131,6 @@ export const defaultRooms: Room[] = [
 		mode: InteractionMode.Jamming,
 		name: "Team_4-P_1",
 		recordingNamePrefix: "team_4-p_1",
-		currentlyEditingUser: null,
 	},
 	{
 		currentRecordingTime: 0,
@@ -154,7 +141,6 @@ export const defaultRooms: Room[] = [
 		mode: InteractionMode.Jamming,
 		name: "Team_4-P_2",
 		recordingNamePrefix: "team_4-p_2",
-		currentlyEditingUser: null,
 	},
 	{
 		currentRecordingTime: 0,
@@ -165,7 +151,6 @@ export const defaultRooms: Room[] = [
 		mode: InteractionMode.Jamming,
 		name: "Team_5",
 		recordingNamePrefix: "team_5",
-		currentlyEditingUser: null,
 	},
 	{
 		currentRecordingTime: 0,
@@ -176,7 +161,6 @@ export const defaultRooms: Room[] = [
 		mode: InteractionMode.Jamming,
 		name: "Team_5-P_1",
 		recordingNamePrefix: "team_5-p_1",
-		currentlyEditingUser: null,
 	},
 	{
 		currentRecordingTime: 0,
@@ -187,6 +171,5 @@ export const defaultRooms: Room[] = [
 		mode: InteractionMode.Jamming,
 		name: "Team_5-P_2",
 		recordingNamePrefix: "team_5-p_2",
-		currentlyEditingUser: null,
 	},
 ]

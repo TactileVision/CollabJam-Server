@@ -24,6 +24,16 @@ const RoomsAPI = (socket: Socket) => {
 	socket.on("disconnecting", (reason) => {
 		Logger.warn(`Removing user ${socket.id} from service because of disconnect`)
 		RoomDB.deleteUser(socket.id)
+		RoomModule.setLocks(socket.id, [])
+		const roomId: string | undefined = RoomModule.lastRoomIdOfUser.get(socket.id);
+		if (roomId == undefined) return;
+
+		const updateEditingUserResp: UpdateEditingUserUUIDS = {
+			roomId: roomId,
+			userId: socket.id,
+			uuids: []
+		}
+		io.to(roomId).emit(WS_MSG_TYPE.UPDATE_EDITING_USER_UUIDS_CLI, updateEditingUserResp);
 	});
 
 	socket.on(WS_MSG_TYPE.GET_AVAILABLE_ROOMS_SERV, async () => {
@@ -57,6 +67,7 @@ const RoomsAPI = (socket: Socket) => {
 			});
 		}
 		
+		RoomModule.updateLastRoomOfUser(req.user.id);		
 		io.to(req.roomId).emit(WS_MSG_TYPE.UPDATE_EDITING_USER_UUIDS_CLI, updateEditingUserResp);
 	})
 
@@ -70,6 +81,7 @@ const RoomsAPI = (socket: Socket) => {
 		tactons = migrateToUuids(tactons);
 		const user = await RoomDB.getUsersOfRoom(req.id)
 		const locks = RoomModule.getLocks();
+		RoomModule.updateLastRoomOfUser(socket.id, req.id);
 		socket.emit(WS_MSG_TYPE.ENTER_ROOM_CLI, {
 			room: r,
 			userId: socket.id,

@@ -1,4 +1,5 @@
 import { InteractionMode, Room } from "@sharedTypes/roomTypes";
+import {Logger} from "../util/Logger";
 //contain all metadata of one room
 export let roomList: Map<string, Room> = new Map<string, Room>();
 //custom list, to calculate the operations of the vibrotactile device for the distributon
@@ -84,6 +85,8 @@ const updateRecordingPrefix = (roomId: string, prefix: string): boolean => {
 
 // Locks
 const lockedUuids: Record<string, string[]> = {};
+const lastRoomIdOfUser: Map<string, string> = new Map<string, string>();
+
 const setLocks = (userId: string, uuids: string[]): void => {
     if (uuids.length == 0) {
         delete lockedUuids[userId];
@@ -93,6 +96,13 @@ const setLocks = (userId: string, uuids: string[]): void => {
 }
 const getLocks = (): Record<string, string[]> => {
     return lockedUuids;
+}
+const updateLastRoomOfUser = (userId: string, roomId?: string): void => {
+    if (roomId) {
+        lastRoomIdOfUser.set(userId, roomId);    
+    } else {
+        lastRoomIdOfUser.delete(userId);   
+    }
 }
 
 export default {
@@ -105,5 +115,7 @@ export default {
     updateRecordingPrefix,
     updateMaxDuration,
     setLocks,
-    getLocks
+    getLocks,
+    updateLastRoomOfUser,
+    lastRoomIdOfUser
 }

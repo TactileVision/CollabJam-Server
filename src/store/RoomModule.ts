@@ -84,19 +84,42 @@ const updateRecordingPrefix = (roomId: string, prefix: string): boolean => {
 }
 
 // Locks
-const lockedUuids: Record<string, string[]> = {};
-const lastRoomIdOfUser: Map<string, string> = new Map<string, string>();
+type RoomId = string;
+type UserId = string;
+type BlockUuid = string;
+type LockedBlocksMap = Record<RoomId, Record<UserId, BlockUuid[]>>;
 
-const setLocks = (userId: string, uuids: string[]): void => {
+const lockedBlocksMap: LockedBlocksMap = {};
+const lastRoomIdOfUser: Map<UserId, RoomId> = new Map<UserId, RoomId>();
+
+const setLocks = (roomId: string, userId: string, uuids: string[]): void => {
+    if (!lockedBlocksMap[roomId]) {
+        if (uuids.length === 0) return;
+        lockedBlocksMap[roomId] = {};
+    }
+    
     if (uuids.length == 0) {
-        delete lockedUuids[userId];
+        delete lockedBlocksMap[roomId][userId]
+        
+        // check if room is empty
+        if (Object.keys(lockedBlocksMap[roomId]).length === 0) {
+            delete lockedBlocksMap[roomId];
+        }
     } else {
-        lockedUuids[userId] = uuids; 
+        lockedBlocksMap[roomId][userId] = uuids; 
     }
 }
-const getLocks = (): Record<string, string[]> => {
-    return lockedUuids;
+const getLocks = (roomId: string): Record<string, string[]> => {
+    if (!lockedBlocksMap[roomId]) {
+        lockedBlocksMap[roomId] = {};
+    }
+    return lockedBlocksMap[roomId];
 }
+
+const clearAllLocks = (roomId: string): void => {
+    delete lockedBlocksMap[roomId];
+}
+
 const updateLastRoomOfUser = (userId: string, roomId?: string): void => {
     if (roomId) {
         lastRoomIdOfUser.set(userId, roomId);    
@@ -116,6 +139,7 @@ export default {
     updateMaxDuration,
     setLocks,
     getLocks,
+    clearAllLocks,
     updateLastRoomOfUser,
     lastRoomIdOfUser
 }

@@ -2,12 +2,14 @@ import { InteractionMode } from "@sharedTypes/roomTypes"
 import { InteractionHandler } from "./handler/handlerInterfaces"
 import { UpdateRoomMode } from "@sharedTypes/websocketTypes"
 import { Logger } from "../../../util/Logger"
+import RoomModule from "../../../store/RoomModule";
 
 export class InteractionModeSwitcher {
 	handler: Map<InteractionMode, InteractionHandler> = new Map<InteractionMode, InteractionHandler>()
 	currentHandler: InteractionHandler | undefined = undefined
 	modeUpdateRequested = (currentMode: InteractionMode, info: UpdateRoomMode): InteractionMode => {
 		Logger.info(`Switching from ${currentMode} to ${info.newMode}`)
+		RoomModule.clearAllLocks(info.roomId);
 		if (currentMode == info.newMode)
 			return info.newMode
 

@@ -24,10 +24,9 @@ const RoomsAPI = (socket: Socket) => {
 	socket.on("disconnecting", (reason) => {
 		Logger.warn(`Removing user ${socket.id} from service because of disconnect`)
 		RoomDB.deleteUser(socket.id)
-		RoomModule.setLocks(socket.id, [])
 		const roomId: string | undefined = RoomModule.lastRoomIdOfUser.get(socket.id);
 		if (roomId == undefined) return;
-
+		RoomModule.setLocks(roomId, socket.id, [])
 		const updateEditingUserResp: UpdateEditingUserUUIDS = {
 			roomId: roomId,
 			userId: socket.id,
@@ -52,7 +51,7 @@ const RoomsAPI = (socket: Socket) => {
 		io.to(req.roomId).emit(WS_MSG_TYPE.UPDATE_USER_ACCOUNT_CLI, u);
 		
 		// unlock blocks
-		RoomModule.setLocks(req.user.id, []);
+		RoomModule.setLocks(req.roomId, req.user.id, []);
 		const updateEditingUserResp: UpdateEditingUserUUIDS = {
 			roomId: req.roomId,
 			userId: req.user.id,
@@ -76,11 +75,13 @@ const RoomsAPI = (socket: Socket) => {
 		socket.join(req.id)
 
 		const r = await RoomDB.getRoom(req.id)
+		if (r == undefined) return;
+		
 		await RoomDB.assignUserToRoom(req.id, { name: req.userName, id: socket.id, color: getColorForUser(req.id), muted: false })
 		let tactons: Tacton[] = await RoomDB.getTactonsForRoom(req.id)
 		tactons = migrateToUuids(tactons);
 		const user = await RoomDB.getUsersOfRoom(req.id)
-		const locks = RoomModule.getLocks();
+		const locks: Record<string, string[]> | undefined = RoomModule.getLocks(r?.id);
 		RoomModule.updateLastRoomOfUser(socket.id, req.id);
 		socket.emit(WS_MSG_TYPE.ENTER_ROOM_CLI, {
 			room: r,
@@ -90,7 +91,6 @@ const RoomsAPI = (socket: Socket) => {
 			userLocks: locks
 		})
 		io.to(req.id).emit(WS_MSG_TYPE.UPDATE_USER_ACCOUNT_CLI, user);
-
 		socket.emit(WS_MSG_TYPE.UPDATE_AVAILABLE_TAGS_CLI, { customTags: await TagsDB.getCustomTags(), bodyTags: await TagsDB.getBodyTags(), promptTags: await TagsDB.getPromptTags() })
 	})
 
@@ -122,7 +122,7 @@ const RoomsAPI = (socket: Socket) => {
 	socket.on(WS_MSG_TYPE.UPDATE_EDITING_USER_UUIDS_SERV, async (req: UpdateEditingUserUUIDS) => {
 		const room: Room | undefined = await RoomDB.getRoom(req.roomId)
 		if (room == undefined || req.userId == null) return
-		RoomModule.setLocks(req.userId, req.uuids);
+		RoomModule.setLocks(req.roomId, req.userId, req.uuids);
 		io.to(req.roomId).emit(WS_MSG_TYPE.UPDATE_EDITING_USER_UUIDS_CLI, req);
 	})
 }
